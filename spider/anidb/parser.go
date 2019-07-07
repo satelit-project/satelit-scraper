@@ -139,7 +139,7 @@ func (p *Parser) EpisodesCount() int32 {
 	if ep, err := strconv.Atoi(prop); err == nil && len(prop) > 0 {
 		return int32(ep)
 	} else if err != nil {
-		p.log.Warnf("failed to parse itemprop=\"numberOfEpisodes\"]: %v", err)
+		p.log.Warnf("ep number is not set: %v", err)
 	}
 
 	// try to parse from row's text
@@ -149,7 +149,7 @@ func (p *Parser) EpisodesCount() int32 {
 	// number after comma, usually for TV type
 	match := regexp.MustCompile(`,\s*(\d+)`).FindStringSubmatch(raw)
 	if len(match) == 0 {
-		p.log.Warnf("didn't find number of episodes for: %v", raw)
+		p.log.Warn("didn't find number of episodes")
 	} else {
 		if ep, err := strconv.Atoi(match[1]); err == nil {
 			return int32(ep)
@@ -167,7 +167,7 @@ func (p *Parser) EpisodesCount() int32 {
 	// probably has comma and some text but no numbers, usually number of ep is unknown
 	match = regexp.MustCompile(`^\D+,?([^\d])+$`).FindStringSubmatch(raw)
 	if len(match) > 0 {
-		p.log.Infof("unknown episode count for %v", p.url)
+		p.log.Info("ep count is not set in DB yet")
 		return 0
 	}
 
@@ -182,7 +182,7 @@ func (p *Parser) Episodes() []*scraper.Episode {
 		ep := new(scraper.Episode)
 		ep.Type = parseEpisodeType(s)
 		if ep.Type == scraper.Episode_UNKNOWN {
-			log.Warnf("unknown episode type, ep name: %v", ep.Name)
+			log.Warn("unknown episode type")
 			return
 		}
 
@@ -350,7 +350,7 @@ func parseEpisodeName(s *goquery.Selection) (string, error) {
 
 	// generic name like "Episode 1" should be skipped
 	if regexp.MustCompile(`episode\s+[\d.]+`).MatchString(strings.ToLower(raw)) {
-		return "", &Error{fmt.Sprintf("unnamed episode: %v", s)}
+		return "", &Error{fmt.Sprintf("unnamed episode: %v", raw)}
 	}
 
 	return strings.TrimSpace(raw), nil
