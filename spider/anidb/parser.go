@@ -74,19 +74,19 @@ func (p *Parser) Type() scraper.Anime_Type {
 	raw = strings.ToLower(raw)
 
 	switch {
-	case regexp.MustCompile("tv\\s+series").MatchString(raw):
+	case regexp.MustCompile(`tv\s+series`).MatchString(raw):
 		return scraper.Anime_TV_SERIES
 
-	case regexp.MustCompile("ova").MatchString(raw):
+	case regexp.MustCompile(`ova`).MatchString(raw):
 		return scraper.Anime_OVA
 
-	case regexp.MustCompile("web").MatchString(raw):
+	case regexp.MustCompile(`web`).MatchString(raw):
 		return scraper.Anime_ONA
 
-	case regexp.MustCompile("movie").MatchString(raw):
+	case regexp.MustCompile(`movie`).MatchString(raw):
 		return scraper.Anime_MOVIE
 
-	case regexp.MustCompile("tv\\s+special").MatchString(raw):
+	case regexp.MustCompile(`tv\s+special`).MatchString(raw):
 		return scraper.Anime_SPECIAL
 
 	default:
@@ -117,8 +117,8 @@ func (p *Parser) EpisodesCount() int32 {
 	raw := row.Text()
 	raw = strings.ToLower(raw)
 
-	// number after comma or space, usually for TV type
-	match := regexp.MustCompile(",?\\s*(\\d+)").FindStringSubmatch(raw)
+	// number after comma, usually for TV type
+	match := regexp.MustCompile(`,\s*(\d+)`).FindStringSubmatch(raw)
 	if len(match) > 1 {
 		log.Warnf("EpisodesCount() regexp found multiple ep numbers: %v", match)
 	} else if len(match) == 1 {
@@ -129,18 +129,20 @@ func (p *Parser) EpisodesCount() int32 {
 		}
 	}
 
-	// no comma and no numbers, but some text, usually for MOVIE
-	match = regexp.MustCompile("^((?![,\\d]).)+$").FindStringSubmatch(raw)
+	// no comma, numbers and questionmark, but some text, usually for 1ep titles
+	match = regexp.MustCompile(`^([^,\d?])+$`).FindStringSubmatch(raw)
 	if len(match) > 0 {
 		return 1
 	}
 
-	// has comma or space and some text but no numbers, usually number of ep is unknown
-	match = regexp.MustCompile("^\\D+,?((?![\\d]).)+$").FindStringSubmatch(raw)
+	// probably has comma and some text but no numbers, usually number of ep is unknown
+	match = regexp.MustCompile(`^\D+,?([^\d])+$`).FindStringSubmatch(raw)
 	if len(match) > 0 {
+		log.Infof("unknown episode count for %v", p.url)
 		return 0
 	}
 
+	log.Warnf("failed to find episode count for %v", p.url)
 	return 0
 }
 
