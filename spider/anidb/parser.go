@@ -282,15 +282,15 @@ func (p *Parser) Description() string {
 	raw = strings.TrimSpace(raw)
 
 	// remove '* Based on ...' line
-	rg := regexp.MustCompile(`(?i)^\*\s?based\son.+$`)
+	rg := regexp.MustCompile(`(?mi)^\*\s?based\son.+$`)
 	raw = rg.ReplaceAllString(raw, "")
 
 	// remove 'Source: ...' line
-	rg = regexp.MustCompile(`(?i)^source:\s?.+$`)
+	rg = regexp.MustCompile(`(?mi)^source:\s?.+$`)
 	raw = rg.ReplaceAllString(raw, "")
 
 	// remove 'Note: ...' line
-	rg = regexp.MustCompile(`(?i)^note:\s?.+$`)
+	rg = regexp.MustCompile(`(?mi)^note:\s?.+$`)
 	raw = rg.ReplaceAllString(raw, "")
 
 	// reformat
