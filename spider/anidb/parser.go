@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"satelit-project/satelit-scraper/proto/scraper"
 
@@ -48,19 +49,19 @@ func (p *Parser) Source() *scraper.Anime_Source {
 
 	source.AnidbId = append(source.AnidbId, id)
 
-	p.doc.Find("div.g_definitionlist tr.resources a[href*=\"myanimelist\"]").Each(func(_ int, s *goquery.Selection) {
+	p.doc.Find(`div.g_definitionlist tr.resources a[href*="myanimelist"]`).Each(func(_ int, s *goquery.Selection) {
 		id, err := parseSource(s.AttrOr("href", ""), "/")
 		if err != nil {
-			log.Warnf("mal id is malformed: %v", err)
+			log.Errorf("mal id is malformed: %v", err)
 		}
 
 		source.MalId = append(source.MalId, id)
 	})
 
-	p.doc.Find("div.g_definitionlist tr.resources a[href*=\"animenewsnetwork\"]").Each(func(_ int, s *goquery.Selection) {
+	p.doc.Find(`div.g_definitionlist tr.resources a[href*="animenewsnetwork"]`).Each(func(_ int, s *goquery.Selection) {
 		id, err := parseSource(s.AttrOr("href", ""), "id=")
 		if err != nil {
-			log.Warnf("ann id is malformed: %v", err)
+			log.Errorf("ann id is malformed: %v", err)
 		}
 
 		source.AnnId = append(source.AnnId, id)
@@ -110,7 +111,7 @@ func (p *Parser) EpisodesCount() int32 {
 	if ep, err := strconv.Atoi(prop); err == nil && len(prop) > 0 {
 		return int32(ep)
 	} else if err != nil {
-		log.Warnf("failed to parse itemprop=\"numberOfEpisodes\"]: %v", err)
+		log.Errorf("failed to parse itemprop=\"numberOfEpisodes\"]: %v", err)
 	}
 
 	// try to parse from row's text
@@ -125,7 +126,7 @@ func (p *Parser) EpisodesCount() int32 {
 		if ep, err := strconv.Atoi(match[0]); err == nil {
 			return int32(ep)
 		} else {
-			log.Warnf("failed to parse episodes count: %v", err)
+			log.Errorf("failed to parse episodes count: %v", err)
 		}
 	}
 
@@ -142,20 +143,125 @@ func (p *Parser) EpisodesCount() int32 {
 		return 0
 	}
 
-	log.Warnf("failed to find episode count for %v", p.url)
-	return 0
+	log.Errorf("failed to find episode count for %v", p.url)
+	return -1
+}
+
+func (p *Parser) Episodes() []*scraper.Episode {
+	eps := make([]*scraper.Episode, 0)
+	p.doc.Find(`table#eplist tr[itemprop="episode"]`).Each(func(_ int, s *goquery.Selection) {
+		ep := new(scraper.Episode)
+		ep.Type = parseEpisodeType(s)
+		if ep.Type == scraper.Episode_UNKNOWN {
+			log.Warnf("unknown episode type: %v", s.Text())
+			return
+		}
+
+		ep.Number = parseEpisodeNumber(s)
+		ep.Name = parseEpisodeName(s)
+		ep.Duration = parseEpisodeDuration(s)
+		ep.AirDate = parseEpisodeDate(s)
+
+		eps = append(eps, ep)
+	})
+
+	return eps
 }
 
 func parseSource(str string, sep string) (int32, error) {
 	raw := strings.Split(str, sep)
 	if len(raw) == 0 {
-		return 0, &Error{fmt.Sprintf("'%v'empty after splitting at %v", str, sep)}
+		return -1, &Error{fmt.Sprintf("'%v'empty after splitting at %v", str, sep)}
 	}
 
 	s, err := strconv.Atoi(raw[len(raw) - 1])
 	if err != nil {
-		return 0, &Error{fmt.Sprintf("source is not an int: %v", s)}
+		return -1, &Error{fmt.Sprintf("source is not an int: %v", s)}
 	}
 
 	return int32(s), nil
+}
+
+func parseEpisodeType(s *goquery.Selection) scraper.Episode_Type {
+	raw := s.Find("td abbr").First().AttrOr("title", "")
+	raw = strings.TrimSpace(strings.ToLower(raw))
+
+	switch {
+	case regexp.MustCompile(`regular\s+episode`).MatchString(raw):
+		return scraper.Episode_REGULAR
+
+	case regexp.MustCompile(`special`).MatchString(raw):
+		return scraper.Episode_SPECIAL
+
+	default:
+		return scraper.Episode_UNKNOWN
+	}
+}
+
+func parseEpisodeNumber(s *goquery.Selection) int32 {
+	raw := s.Find("td abbr").First().Text()
+	match := regexp.MustCompile(`\d+`).FindStringSubmatch(raw)
+	if len(match) != 1 {
+		log.Errorf("multiple episode numbers found: %v", raw)
+		return -1
+	}
+
+	num, err := strconv.Atoi(match[0])
+	if err != nil {
+		log.Errorf("episode number is not an int: %v", err)
+		return -1
+	}
+
+	return int32(num)
+}
+
+func parseEpisodeName(s *goquery.Selection) string {
+	raw := s.Find("td.name").First().Text()
+
+	// generic name like "Episode 1" should be skipped
+	if regexp.MustCompile(`episode\s+[\d.]+`).MatchString(strings.ToLower(raw)) {
+		log.Infof("unnamed episode: %v", s)
+		return ""
+	}
+
+	return strings.TrimSpace(raw)
+}
+
+func parseEpisodeDuration(s *goquery.Selection) float64 {
+	raw := s.Find("td.duration").First().Text()
+	raw = strings.TrimSpace(raw)
+	if len(raw) == 0 {
+		log.Warnf("episode duration not found: %v", s)
+		return 0
+	}
+
+	match := regexp.MustCompile(`(\d+)\s*m`).FindStringSubmatch(raw)
+	if len(match) == 0 {
+		log.Warnf("episode duration not found: %v", raw)
+		return 0
+	}
+
+	mins, err := strconv.ParseFloat(match[0], 64)
+	if err != nil {
+		log.Errorf("failed to parse episode duration: %v", err)
+		return 0
+	}
+
+	return mins * 60
+}
+
+func parseEpisodeDate(s *goquery.Selection) int64 {
+	raw := s.Find("td.airdate").First().AttrOr("content", "")
+	if len(raw) == 0 {
+		log.Warnf("episode air date not found: %v", raw)
+		return -1
+	}
+
+	t, err := time.Parse("2006-01-02", raw)
+	if err != nil {
+		log.Errorf("failed to parse episode air date: %v", raw)
+		return -1
+	}
+
+	return t.Unix()
 }
