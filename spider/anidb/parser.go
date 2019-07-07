@@ -144,7 +144,7 @@ func (p *Parser) EpisodesCount() int32 {
 	}
 
 	log.Errorf("failed to find episode count for %v", p.url)
-	return -1
+	return 0
 }
 
 func (p *Parser) Episodes() []*scraper.Episode {
@@ -168,15 +168,92 @@ func (p *Parser) Episodes() []*scraper.Episode {
 	return eps
 }
 
+func (p *Parser) StartDate() int64 {
+	raw := p.doc.Find(`"div.g_definitionlist tr.year span[itemprop="startDate"]"`).First().AttrOr("content", "")
+	d, err := parseDate(raw)
+	if err != nil {
+		log.Errorf("failed to parse start date: %v", err)
+		return 0
+	}
+
+	return d
+}
+
+func (p *Parser) EndDate() int64 {
+	raw := p.doc.Find(`"div.g_definitionlist tr.year span[itemprop="endDate"]"`).First().AttrOr("content", "")
+	d, err := parseDate(raw)
+	if err != nil {
+		log.Errorf("failed to parse end date: %v", err)
+		return 0
+	}
+
+	return d
+}
+
+func (p *Parser) Tags() []*scraper.Anime_Tag {
+	tags := make([]*scraper.Anime_Tag, 0)
+	p.doc.Find("div.g_definitionlist tr.tags span.g_tag").Each(func(_ int, s *goquery.Selection) {
+		tag := new(scraper.Anime_Tag)
+		name, id := parseTagName(s), parseTagID(s)
+		if len(name) == 0 || id < 0 {
+			return
+		}
+
+		tag.Name = name
+		tag.Source = &scraper.Anime_Tag_AnidbId{AnidbId: id}
+		tag.Description = parseTagInfo(s)
+
+		tags = append(tags, tag)
+	})
+
+	return tags
+}
+
+func (p *Parser) Rating() float64 {
+	raw := p.doc.Find("div.g_definitionlist tr.tmprating span.value").Text()
+	raw = strings.TrimSpace(raw)
+
+	r, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		log.Errorf("failed to parse rating: %v", err)
+		return 0
+	}
+
+	return r
+}
+
+func (p *Parser) Description() string {
+	raw := p.doc.Find(`div.desc[itemprop="description"]`).First().Text()
+	raw = strings.TrimSpace(raw)
+
+	// remove '* Based on ...' line
+	rg := regexp.MustCompile(`(?i)^\*\s?based\son.+$`)
+	raw = rg.ReplaceAllString(raw, "")
+
+	// remove 'Source: ...' line
+	rg = regexp.MustCompile(`(?i)^source:\s?.+$`)
+	raw = rg.ReplaceAllString(raw, "")
+
+	// remove 'Note: ...' line
+	rg = regexp.MustCompile(`(?i)^note:\s?.+$`)
+	raw = rg.ReplaceAllString(raw, "")
+
+	// reformat
+	rg = regexp.MustCompile(`\n\n+`)
+	raw = strings.Join(rg.Split(raw, -1), "\n\n")
+
+	return strings.TrimSpace(raw)
+}
+
 func parseSource(str string, sep string) (int32, error) {
 	raw := strings.Split(str, sep)
 	if len(raw) == 0 {
-		return -1, &Error{fmt.Sprintf("'%v'empty after splitting at %v", str, sep)}
+		return 0, &Error{fmt.Sprintf("'%v'empty after splitting at %v", str, sep)}
 	}
 
 	s, err := strconv.Atoi(raw[len(raw) - 1])
 	if err != nil {
-		return -1, &Error{fmt.Sprintf("source is not an int: %v", s)}
+		return 0, &Error{fmt.Sprintf("source is not an int: %v", s)}
 	}
 
 	return int32(s), nil
@@ -252,16 +329,58 @@ func parseEpisodeDuration(s *goquery.Selection) float64 {
 
 func parseEpisodeDate(s *goquery.Selection) int64 {
 	raw := s.Find("td.airdate").First().AttrOr("content", "")
-	if len(raw) == 0 {
-		log.Warnf("episode air date not found: %v", raw)
-		return -1
-	}
-
-	t, err := time.Parse("2006-01-02", raw)
+	d, err := parseDate(raw)
 	if err != nil {
-		log.Errorf("failed to parse episode air date: %v", raw)
+		log.Errorf("%v: %v", err, s)
+		return 0
+	}
+
+	return d
+}
+
+func parseDate(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return 0, &Error{"parse date is empty"}
+	}
+
+	t, err := time.Parse("2006-01-02", s)
+	if err != nil {
+		return 0, err
+	}
+
+	return t.Unix(), nil
+}
+
+func parseTagName(s *goquery.Selection) string {
+	raw := s.Find("span.tagname").First().Text()
+	return strings.TrimSpace(raw)
+}
+
+func parseTagInfo(s *goquery.Selection) string {
+	raw := s.Find("span.text").First().Text()
+
+	raw = strings.TrimSpace(raw)
+	raw = strings.TrimPrefix(raw, "\"")
+	raw = strings.TrimSuffix(raw, "\"")
+	raw = strings.TrimSpace(raw)
+
+	return raw
+}
+
+func parseTagID(s *goquery.Selection) int32 {
+	raw := s.Find("a.tooltip").First().AttrOr("href", "")
+	match := regexp.MustCompile(`tagid=(\d+)`).FindStringSubmatch(raw)
+	if len(match) != 1 {
+		log.Errorf("multiple tag ids found: %v", match)
 		return -1
 	}
 
-	return t.Unix()
+	id, err := strconv.Atoi(match[0])
+	if err != nil {
+		log.Errorf("failed to parse tag id: %v", err)
+		return -1
+	}
+
+	return int32(id)
 }
