@@ -58,6 +58,7 @@ func (s *Spider) Run() {
 	}
 
 	coll.Wait()
+	s.reporter.Finish()
 }
 
 func (s *Spider) setupProxy(coll *colly.Collector) {
