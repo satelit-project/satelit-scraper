@@ -3,7 +3,6 @@ package anidb
 import (
 	"bytes"
 	"fmt"
-	"runtime"
 
 	"satelit-project/satelit-scraper/proto/scraper"
 	"satelit-project/satelit-scraper/spider"
@@ -11,16 +10,31 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
 	"github.com/gocolly/colly/proxy"
-	"github.com/gocolly/colly/queue"
 	"github.com/sirupsen/logrus"
 )
 
 type Spider struct {
-	task *scraper.Task
+	task     *scraper.Task
 	reporter *spider.TaskReporter
-	proxies []string
-	urlMap map[string]int32
-	log *logrus.Entry
+	proxies  []string
+	urlMap   map[string]int32
+	log      *logrus.Entry
+}
+
+func NewSpider(task *scraper.Task, reporter *spider.TaskReporter) *Spider {
+	log := logrus.WithField("spider_task", task.Id)
+
+	return &Spider{
+		task:     task,
+		reporter: reporter,
+		proxies:  make([]string, 0),
+		urlMap:   make(map[string]int32, 0),
+		log:      log,
+	}
+}
+
+func (s *Spider) SetProxies(proxies []string) {
+	s.proxies = proxies
 }
 
 func (s *Spider) Run() {
@@ -33,15 +47,15 @@ func (s *Spider) Run() {
 	s.setupProxy(coll)
 	s.setupCallbacks(coll)
 
-	collq, err := s.makeQueue()
-	if err != nil {
-		s.log.Errorf("failed to setup queue: %v", err)
-		return
+	animeURLs := s.makeURLs()
+	for _, animeURL := range animeURLs {
+		err := coll.Visit(animeURL)
+		if err != nil {
+			s.log.Errorf("scraping failed: %v", err)
+		}
 	}
 
-	if err := collq.Run(coll); err != nil {
-		s.log.Errorf("scraping failed: %v", err)
-	}
+	coll.Wait()
 }
 
 func (s *Spider) setupProxy(coll *colly.Collector) {
@@ -75,29 +89,21 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 
 		s.reporter.Report(anime, scheduleID)
 	})
+
+	coll.OnError(func(r *colly.Response, e error) {
+		s.log.Errorf("request failed: %v", e)
+	})
 }
 
-func (s *Spider) makeQueue() (*queue.Queue, error) {
-	collq, err := queue.New(
-		runtime.NumCPU(),
-		&queue.InMemoryQueueStorage{MaxSize: len(s.task.ScheduleIds)},
-	)
-
-	if err != nil {
-		return nil, err
-	}
-
+func (s *Spider) makeURLs() []string {
+	var urls []string
 	for i := 0; i < len(s.task.AnimeIds); i++ {
 		url := urlForID(s.task.AnimeIds[i])
-		err := collq.AddURL(url)
+		urls = append(urls, url)
 		s.urlMap[url] = s.task.ScheduleIds[i]
-		if err != nil {
-			// will not happen
-			s.log.Errorf("failed to queue url: %v", err)
-		}
 	}
 
-	return collq, nil
+	return urls
 }
 
 func urlForID(id int32) string {

@@ -9,7 +9,7 @@ require (
 	github.com/antchfx/xpath v1.0.0 // indirect
 	github.com/chromedp/chromedp v0.3.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
-	github.com/gocolly/colly v1.2.0 // indirect
+	github.com/gocolly/colly v1.2.0
 	github.com/golang/protobuf v1.3.1
 	github.com/google/go-cmp v0.3.0 // indirect
 	github.com/kennygrant/sanitize v1.2.4 // indirect
