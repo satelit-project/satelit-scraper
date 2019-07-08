@@ -3,6 +3,7 @@ package anidb
 import (
 	"bytes"
 	"fmt"
+	"time"
 
 	"satelit-project/satelit-scraper/proto/scraper"
 	"satelit-project/satelit-scraper/spider"
@@ -46,6 +47,7 @@ func (s *Spider) Run() {
 
 	s.setupProxy(coll)
 	s.setupCallbacks(coll)
+	coll.SetRequestTimeout(30 * time.Second)
 
 	animeURLs := s.makeURLs()
 	for _, animeURL := range animeURLs {
