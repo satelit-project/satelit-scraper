@@ -32,7 +32,7 @@ func NewSpider(task *scraper.Task, reporter *spider.TaskReporter) *Spider {
 		task:     task,
 		reporter: reporter,
 		proxies:  make([]string, 0),
-		urlMap:   make(map[string]int32, 0),
+		urlMap:   make(map[string]int32),
 		timeout:  45 * time.Second,
 		delay:    3 * time.Second,
 		log:      log,
@@ -102,7 +102,7 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 		}
 
 		scheduleID, ok := s.urlMap[r.Request.URL.String()]
-		if ok != true {
+		if !ok {
 			s.log.Errorf("schedule id not found")
 		}
 
@@ -138,5 +138,5 @@ func (l CollyLogger) Init() error {
 }
 
 func (l CollyLogger) Event(e *debug.Event) {
-	l.log.Debugf("%d [%6d - %s] %q (%s)\n", e.CollectorID, e.RequestID, e.Type, e.Values)
+	l.log.Debugf("%d [%6d - %s] %q\n", e.CollectorID, e.RequestID, e.Type, e.Values)
 }
