@@ -10,6 +10,7 @@ import (
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
+	"github.com/gocolly/colly/extensions"
 	"github.com/gocolly/colly/proxy"
 	"github.com/sirupsen/logrus"
 )
@@ -19,6 +20,8 @@ type Spider struct {
 	reporter *spider.TaskReporter
 	proxies  []string
 	urlMap   map[string]int32
+	timeout  time.Duration
+	delay    time.Duration
 	log      *logrus.Entry
 }
 
@@ -30,12 +33,22 @@ func NewSpider(task *scraper.Task, reporter *spider.TaskReporter) *Spider {
 		reporter: reporter,
 		proxies:  make([]string, 0),
 		urlMap:   make(map[string]int32, 0),
+		timeout:  45 * time.Second,
+		delay:    3 * time.Second,
 		log:      log,
 	}
 }
 
 func (s *Spider) SetProxies(proxies []string) {
 	s.proxies = proxies
+}
+
+func (s *Spider) SetTimeout(timeout time.Duration) {
+	s.timeout = timeout
+}
+
+func (s *Spider) SetDelay(delay time.Duration) {
+	s.delay = delay
 }
 
 func (s *Spider) Run() {
@@ -47,7 +60,8 @@ func (s *Spider) Run() {
 
 	s.setupProxy(coll)
 	s.setupCallbacks(coll)
-	coll.SetRequestTimeout(30 * time.Second)
+	coll.SetRequestTimeout(s.timeout)
+	_ = coll.Limit(&colly.LimitRule{DomainGlob: "*", Delay: s.delay})
 
 	animeURLs := s.makeURLs()
 	for _, animeURL := range animeURLs {
@@ -72,6 +86,8 @@ func (s *Spider) setupProxy(coll *colly.Collector) {
 }
 
 func (s *Spider) setupCallbacks(coll *colly.Collector) {
+	extensions.RandomUserAgent(coll)
+
 	coll.OnResponse(func(r *colly.Response) {
 		parser, err := NewParser(r.Request.URL, bytes.NewReader(r.Body))
 		if err != nil {
