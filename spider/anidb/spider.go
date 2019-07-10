@@ -6,19 +6,20 @@ import (
 	"time"
 
 	"satelit-project/satelit-scraper/proto/scraper"
+	"satelit-project/satelit-scraper/proxy"
 	"satelit-project/satelit-scraper/spider"
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
 	"github.com/gocolly/colly/extensions"
-	"github.com/gocolly/colly/proxy"
+	cproxy "github.com/gocolly/colly/proxy"
 	"github.com/sirupsen/logrus"
 )
 
 type Spider struct {
 	task     *scraper.Task
 	reporter *spider.TaskReporter
-	proxies  []string
+	proxies  []proxy.Proxy
 	urlMap   map[string]int32
 	timeout  time.Duration
 	delay    time.Duration
@@ -31,15 +32,15 @@ func NewSpider(task *scraper.Task, reporter *spider.TaskReporter) *Spider {
 	return &Spider{
 		task:     task,
 		reporter: reporter,
-		proxies:  make([]string, 0),
+		proxies:  make([]proxy.Proxy, 0),
 		urlMap:   make(map[string]int32),
-		timeout:  45 * time.Second,
+		timeout:  20 * time.Second,
 		delay:    3 * time.Second,
 		log:      log,
 	}
 }
 
-func (s *Spider) SetProxies(proxies []string) {
+func (s *Spider) SetProxies(proxies []proxy.Proxy) {
 	s.proxies = proxies
 }
 
@@ -61,6 +62,8 @@ func (s *Spider) Run() {
 	s.setupProxy(coll)
 	s.setupCallbacks(coll)
 	coll.SetRequestTimeout(s.timeout)
+	coll.DisableCookies()
+	extensions.RandomUserAgent(coll)
 	_ = coll.Limit(&colly.LimitRule{DomainGlob: "*", Delay: s.delay})
 
 	animeURLs := s.makeURLs()
@@ -76,7 +79,12 @@ func (s *Spider) Run() {
 }
 
 func (s *Spider) setupProxy(coll *colly.Collector) {
-	prx, err := proxy.RoundRobinProxySwitcher(s.proxies...)
+	proxies := make([]string, 0, len(s.proxies))
+	for _, p := range s.proxies {
+		proxies = append(proxies, p.String())
+	}
+
+	prx, err := cproxy.RoundRobinProxySwitcher(proxies...)
 	if err != nil {
 		s.log.Errorf("failed to set up proxy: %v", err)
 		return
@@ -86,8 +94,6 @@ func (s *Spider) setupProxy(coll *colly.Collector) {
 }
 
 func (s *Spider) setupCallbacks(coll *colly.Collector) {
-	extensions.RandomUserAgent(coll)
-
 	coll.OnResponse(func(r *colly.Response) {
 		parser, err := NewParser(r.Request.URL, bytes.NewReader(r.Body))
 		if err != nil {
@@ -107,6 +113,12 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 		}
 
 		s.reporter.Report(anime, scheduleID)
+	})
+
+	coll.OnRequest(func(r *colly.Request) {
+		if r.ProxyURL != "" {
+			s.log.Infof("using proxy: %s", r.ProxyURL)
+		}
 	})
 
 	coll.OnError(func(r *colly.Response, e error) {
