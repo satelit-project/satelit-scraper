@@ -139,7 +139,7 @@ func (p *Parser) EpisodesCount() int32 {
 	if ep, err := strconv.Atoi(prop); err == nil && len(prop) > 0 {
 		return int32(ep)
 	} else if err != nil {
-		p.log.Warnf("ep number is not set: %v", err)
+		p.log.Infof("ep number is not directly specified: %v", err)
 	}
 
 	// try to parse from row's text
@@ -149,12 +149,12 @@ func (p *Parser) EpisodesCount() int32 {
 	// number after comma, usually for TV type
 	match := regexp.MustCompile(`,\s*(\d+)`).FindStringSubmatch(raw)
 	if len(match) == 0 {
-		p.log.Warn("didn't find number of episodes")
+		p.log.Info("didn't guess number of eps format: %v", raw)
 	} else {
 		if ep, err := strconv.Atoi(match[1]); err == nil {
 			return int32(ep)
 		} else {
-			p.log.Warnf("failed to parse episodes count: %v", err)
+			p.log.Infof("didn't guess number of eps format: %v, raw: %v", err, raw)
 		}
 	}
 
@@ -177,12 +177,12 @@ func (p *Parser) EpisodesCount() int32 {
 
 func (p *Parser) Episodes() []*scraper.Episode {
 	eps := make([]*scraper.Episode, 0)
-	p.doc.Find(`table#eplist tr[itemprop="episode"]`).Each(func(i int, s *goquery.Selection) {
+	p.doc.Find(`table#eplist tr[id*="eid"]`).Each(func(i int, s *goquery.Selection) {
 		log := p.log.WithField("ep_idx", i)
 		ep := new(scraper.Episode)
 		ep.Type = parseEpisodeType(s)
 		if ep.Type == scraper.Episode_UNKNOWN {
-			log.Warn("unknown episode type")
+			log.Info("unknown episode type")
 			return
 		}
 
@@ -218,25 +218,65 @@ func (p *Parser) Episodes() []*scraper.Episode {
 }
 
 func (p *Parser) StartDate() int64 {
-	raw := p.doc.Find(`div.g_definitionlist tr.year span[itemprop="startDate"]`).First().AttrOr("content", "")
-	d, err := parseDate(raw)
-	if err != nil {
-		p.log.Warnf("failed to parse start date: %v", err)
-		return 0
+	raw := p.doc.Find(`div.g_definitionlist tr.year`).First()
+
+	prop := raw.Find(` span[itemprop="startDate"]`).AttrOr("content", "")
+	d, err := parseDate(prop)
+	if err == nil {
+		return d
 	}
 
-	return d
+	p.log.Infof("startDate prop not found: %v", err)
+
+	prop = raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
+	d, err = parseDate(prop)
+	if err == nil {
+		return d
+	}
+
+	p.log.Infof("datePublished prop not found: %v", err)
+
+	prop = raw.Find("td.value").Text()
+	d, _, err = parseRawAirDate(prop)
+	if err == nil {
+		return d
+	}
+
+	p.log.Infof("raw air date not found: %v", err)
+	p.log.Warnf("failed to parse start date: %v", raw.Text())
+
+	return 0
 }
 
 func (p *Parser) EndDate() int64 {
-	raw := p.doc.Find(`div.g_definitionlist tr.year span[itemprop="endDate"]`).First().AttrOr("content", "")
-	d, err := parseDate(raw)
-	if err != nil {
-		p.log.Warnf("failed to parse end date: %v", err)
-		return 0
+	raw := p.doc.Find(`div.g_definitionlist tr.year`).First()
+
+	prop := raw.Find(` span[itemprop="endDate"]`).AttrOr("content", "")
+	d, err := parseDate(prop)
+	if err == nil {
+		return d
 	}
 
-	return d
+	p.log.Infof("endDate prop not found: %v", err)
+
+	prop = raw.Find("td.value").Text()
+	_, d, err = parseRawAirDate(prop)
+	if err == nil {
+		return d
+	}
+
+	p.log.Infof("raw air date not found: %v", err)
+
+	prop = raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
+	d, err = parseDate(prop)
+	if err == nil {
+		return d
+	}
+
+	p.log.Infof("datePublished prop not found: %v", err)
+	p.log.Warnf("failed to parse end date: %v", raw.Text())
+
+	return 0
 }
 
 func (p *Parser) Tags() []*scraper.Anime_Tag {
@@ -319,7 +359,7 @@ func parseEpisodeType(s *goquery.Selection) scraper.Episode_Type {
 	raw = strings.TrimSpace(strings.ToLower(raw))
 
 	switch {
-	case regexp.MustCompile(`regular\s+episode`).MatchString(raw):
+	case regexp.MustCompile(`regular`).MatchString(raw):
 		return scraper.Episode_REGULAR
 
 	case regexp.MustCompile(`special`).MatchString(raw):
@@ -331,7 +371,7 @@ func parseEpisodeType(s *goquery.Selection) scraper.Episode_Type {
 }
 
 func parseEpisodeNumber(s *goquery.Selection) (int32, error) {
-	raw := s.Find("td abbr").First().Text()
+	raw := s.Find("td.eid abbr").First().Text()
 	match := regexp.MustCompile(`\d+`).FindStringSubmatch(raw)
 	if len(match) == 0 {
 		return 0, &Error{fmt.Sprintf("not found for: %v", raw)}
@@ -346,7 +386,7 @@ func parseEpisodeNumber(s *goquery.Selection) (int32, error) {
 }
 
 func parseEpisodeName(s *goquery.Selection) (string, error) {
-	raw := s.Find(`td.name label[itemprop="name"]`).First().Text()
+	raw := s.Find(`td.name label`).First().Text()
 
 	// generic name like "Episode 1" should be skipped
 	if regexp.MustCompile(`episode\s+[\d.]+`).MatchString(strings.ToLower(raw)) {
@@ -377,13 +417,18 @@ func parseEpisodeDuration(s *goquery.Selection) (float64, error) {
 }
 
 func parseEpisodeDate(s *goquery.Selection) (int64, error) {
-	raw := s.Find("td.airdate").First().AttrOr("content", "")
-	d, err := parseDate(raw)
-	if err != nil {
-		return 0, &Error{fmt.Sprintf("parsing failed: %v", err)}
+	raw := s.Find("td.airdate").First()
+	d, err := parseDate(raw.AttrOr("content", ""))
+	if err == nil {
+		return d, nil
 	}
 
-	return d, nil
+	d, err = parseAltDate(raw.Text())
+	if err == nil {
+		return d, nil
+	}
+
+	return 0, &Error{fmt.Sprintf("parsing failed: %v", err)}
 }
 
 func parseDate(s string) (int64, error) {
@@ -399,6 +444,45 @@ func parseDate(s string) (int64, error) {
 
 	return t.Unix(), nil
 }
+
+func parseAltDate(s string) (int64, error) {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return 0, &Error{"alt parse date is empty"}
+	}
+
+	t, err := time.Parse("02.01.2006", s)
+	if err != nil {
+		return 0, err
+	}
+
+	return t.Unix(), nil
+}
+
+func parseRawAirDate(s string) (int64, int64, error) {
+	s = strings.TrimSpace(s)
+	if len(s) == 0 {
+		return 0, 0, &Error{"raw air date is empty"}
+	}
+
+	match := regexp.MustCompile(`(\d{2}.\d{2}.\d{4}).+(till|,).+(\d{2}.\d{2}.\d{4})`).FindStringSubmatch(s)
+	if len(match) != 4 {
+		return 0, 0, &Error{"raw air date unknown format"}
+	}
+
+	start, err := time.Parse("02.01.2006", match[1])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	end, err := time.Parse("02.01.2006", match[3])
+	if err != nil {
+		return 0, 0, err
+	}
+
+	return start.Unix(), end.Unix(), nil
+}
+
 
 func parseTagName(s *goquery.Selection) string {
 	raw := s.Find("span.tagname").First().Text()
