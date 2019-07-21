@@ -34,7 +34,7 @@ func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	fields := logrus.Fields{"db": "anidb"}
 	if id, err := parseSource(url.String(), "aid="); err == nil {
 		fields["id"] = id
@@ -46,17 +46,17 @@ func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
 
 func (p *Parser) Anime() (*scraper.Anime, error) {
 	anime := scraper.Anime{
-		Source:               p.Source(),
-		Type:                 p.Type(),
-		Title:                p.Title(),
-		PosterUrl:            p.PosterURL(),
-		EpisodesCount:        p.EpisodesCount(),
-		Episodes:             p.Episodes(),
-		StartDate:            p.StartDate(),
-		EndDate:              p.EndDate(),
-		Tags:                 p.Tags(),
-		Rating:               p.Rating(),
-		Description:          p.Description(),
+		Source:        p.Source(),
+		Type:          p.Type(),
+		Title:         p.Title(),
+		PosterUrl:     p.PosterURL(),
+		EpisodesCount: p.EpisodesCount(),
+		Episodes:      p.Episodes(),
+		StartDate:     p.StartDate(),
+		EndDate:       p.EndDate(),
+		Tags:          p.Tags(),
+		Rating:        p.Rating(),
+		Description:   p.Description(),
 	}
 
 	if anime.Source == nil {
@@ -93,7 +93,7 @@ func (p *Parser) Source() *scraper.Anime_Source {
 		}
 
 		source.AnnId = append(source.AnnId, id)
- 	})
+	})
 
 	return &source
 }
@@ -149,7 +149,7 @@ func (p *Parser) EpisodesCount() int32 {
 	// number after comma, usually for TV type
 	match := regexp.MustCompile(`,\s*(\d+)`).FindStringSubmatch(raw)
 	if len(match) == 0 {
-		p.log.Info("didn't guess number of eps format: %v", raw)
+		p.log.Infof("didn't guess number of eps format: %v", raw)
 	} else {
 		if ep, err := strconv.Atoi(match[1]); err == nil {
 			return int32(ep)
@@ -346,7 +346,7 @@ func parseSource(str string, sep string) (int32, error) {
 		return 0, &Error{fmt.Sprintf("'%v' is not a source", str)}
 	}
 
-	s, err := strconv.Atoi(raw[len(raw) - 1])
+	s, err := strconv.Atoi(raw[len(raw)-1])
 	if err != nil {
 		return 0, &Error{fmt.Sprintf("not an int: %v", s)}
 	}
@@ -482,7 +482,6 @@ func parseRawAirDate(s string) (int64, int64, error) {
 
 	return start.Unix(), end.Unix(), nil
 }
-
 
 func parseTagName(s *goquery.Selection) string {
 	raw := s.Find("span.tagname").First().Text()

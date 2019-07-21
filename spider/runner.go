@@ -3,10 +3,10 @@ package spider
 import (
 	"context"
 	"fmt"
-	"satelit-project/satelit-scraper/proxy/provider"
 
 	"satelit-project/satelit-scraper/proto/scraper"
 	"satelit-project/satelit-scraper/proxy"
+	"satelit-project/satelit-scraper/proxy/provider"
 	"satelit-project/satelit-scraper/spider/anidb"
 
 	"github.com/golang/protobuf/ptypes/empty"
