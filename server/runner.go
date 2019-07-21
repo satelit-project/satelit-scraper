@@ -1,4 +1,4 @@
-package spider
+package server
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"satelit-project/satelit-scraper/proto/scraper"
 	"satelit-project/satelit-scraper/proxy"
 	"satelit-project/satelit-scraper/proxy/provider"
+	"satelit-project/satelit-scraper/spider"
 	"satelit-project/satelit-scraper/spider/anidb"
 
 	"github.com/golang/protobuf/ptypes/empty"
@@ -43,7 +44,7 @@ func (g grpcTransport) Finish(tf *scraper.TaskFinish) error {
 func Init(taskServerAddr string) {
 	Deinit()
 
-	conn, err := grpc.Dial(taskServerAddr)
+	conn, err := grpc.Dial(taskServerAddr, grpc.WithInsecure())
 	if err != nil {
 		panic(fmt.Sprintf("failed to initiate connection to %s: %v\n", taskServerAddr, err))
 	}
@@ -120,14 +121,14 @@ func startAniDBScraping(ctx scrapeContext) {
 	proxies := runner.proxyFetcher.Fetch()
 
 	tr := grpcTransport{client: ctx.client}
-	reporter := NewTaskReporter(ctx.task, tr)
-	spider := anidb.NewSpider(ctx.task, reporter)
+	reporter := spider.NewTaskReporter(ctx.task, tr)
+	spdr := anidb.NewSpider(ctx.task, reporter)
 
 	if len(proxies) == 0 {
 		reporter.Finish()
 		return
 	}
 
-	spider.SetProxies(proxies)
-	spider.Run()
+	spdr.SetProxies(proxies)
+	spdr.Run()
 }

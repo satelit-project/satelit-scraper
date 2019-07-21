@@ -1,14 +1,14 @@
-package spider
+package server
 
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc"
 	"net"
 
 	"satelit-project/satelit-scraper/proto/scraper"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"google.golang.org/grpc"
 )
 
 type scraperServiceServer struct{}

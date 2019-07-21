@@ -3,9 +3,9 @@ package spider
 import (
 	"sync"
 
-	"github.com/sirupsen/logrus"
-
 	"satelit-project/satelit-scraper/proto/scraper"
+
+	"github.com/sirupsen/logrus"
 )
 
 type Transport interface {
