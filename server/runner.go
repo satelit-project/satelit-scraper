@@ -114,6 +114,8 @@ func runScraper(ctx scrapeContext) {
 	switch ctx.intent.Source {
 	case scraper.ScrapeIntent_ANIDB:
 		startAniDBScraping(ctx)
+	default:
+		ctx.log.Errorf("scraper for source is not implemented: %v", ctx.intent.Source)
 	}
 }
 

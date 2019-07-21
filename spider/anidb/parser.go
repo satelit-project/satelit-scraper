@@ -151,11 +151,12 @@ func (p *Parser) EpisodesCount() int32 {
 	if len(match) == 0 {
 		p.log.Infof("didn't guess number of eps format: %v", raw)
 	} else {
-		if ep, err := strconv.Atoi(match[1]); err == nil {
-			return int32(ep)
-		} else {
+		ep, err := strconv.Atoi(match[1])
+		if err != nil {
 			p.log.Infof("didn't guess number of eps format: %v, raw: %v", err, raw)
 		}
+
+		return int32(ep)
 	}
 
 	// no comma, numbers and questionmark, but some text, usually for 1ep titles

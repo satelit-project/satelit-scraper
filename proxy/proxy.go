@@ -24,8 +24,8 @@ func (p Protocol) String() string {
 }
 
 type Proxy struct {
-	Host string
-	Port string
+	Host  string
+	Port  string
 	Proto Protocol
 }
 
