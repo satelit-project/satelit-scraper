@@ -6,13 +6,14 @@ import (
 	"satelit-project/satelit-scraper/pkg/spider"
 	"time"
 
+	"satelit-project/satelit-scraper/pkg/proto/scraping"
+	"satelit-project/satelit-scraper/pkg/proxy"
+
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
 	"github.com/gocolly/colly/extensions"
 	cproxy "github.com/gocolly/colly/proxy"
 	"github.com/sirupsen/logrus"
-	"satelit-project/satelit-scraper/pkg/proto/scraping"
-	"satelit-project/satelit-scraper/pkg/proxy"
 )
 
 type Spider struct {
