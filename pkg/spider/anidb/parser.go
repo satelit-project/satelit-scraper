@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"satelit-project/satelit-scraper/proto/scraper"
+	"satelit-project/satelit-scraper/pkg/proto/data"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"
@@ -44,8 +44,8 @@ func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
 	return &p, nil
 }
 
-func (p *Parser) Anime() (*scraper.Anime, error) {
-	anime := scraper.Anime{
+func (p *Parser) Anime() (*data.Anime, error) {
+	anime := data.Anime{
 		Source:        p.Source(),
 		Type:          p.Type(),
 		Title:         p.Title(),
@@ -66,8 +66,8 @@ func (p *Parser) Anime() (*scraper.Anime, error) {
 	return &anime, nil
 }
 
-func (p *Parser) Source() *scraper.Anime_Source {
-	var source scraper.Anime_Source
+func (p *Parser) Source() *data.Anime_Source {
+	var source data.Anime_Source
 
 	id, err := parseSource(p.url.String(), "aid=")
 	if err != nil {
@@ -75,7 +75,7 @@ func (p *Parser) Source() *scraper.Anime_Source {
 		return nil
 	}
 
-	source.AnidbId = append(source.AnidbId, id)
+	source.AnidbIds = append(source.AnidbIds, id)
 
 	p.doc.Find(`div.g_definitionlist tr.resources a[href*="myanimelist"]`).Each(func(_ int, s *goquery.Selection) {
 		id, err := parseSource(s.AttrOr("href", ""), "/")
@@ -83,7 +83,7 @@ func (p *Parser) Source() *scraper.Anime_Source {
 			p.log.Warnf("mal id is malformed: %v", err)
 		}
 
-		source.MalId = append(source.MalId, id)
+		source.MalIds = append(source.MalIds, id)
 	})
 
 	p.doc.Find(`div.g_definitionlist tr.resources a[href*="animenewsnetwork"]`).Each(func(_ int, s *goquery.Selection) {
@@ -92,34 +92,34 @@ func (p *Parser) Source() *scraper.Anime_Source {
 			p.log.Warnf("ann id is malformed: %v", err)
 		}
 
-		source.AnnId = append(source.AnnId, id)
+		source.AnnIds = append(source.AnnIds, id)
 	})
 
 	return &source
 }
 
-func (p *Parser) Type() scraper.Anime_Type {
+func (p *Parser) Type() data.Anime_Type {
 	raw := p.doc.Find("div.g_definitionlist tr.type td.value").First().Text()
 	raw = strings.ToLower(raw)
 
 	switch {
 	case regexp.MustCompile(`tv\s+series`).MatchString(raw):
-		return scraper.Anime_TV_SERIES
+		return data.Anime_TV_SERIES
 
 	case regexp.MustCompile(`ova`).MatchString(raw):
-		return scraper.Anime_OVA
+		return data.Anime_OVA
 
 	case regexp.MustCompile(`web`).MatchString(raw):
-		return scraper.Anime_ONA
+		return data.Anime_ONA
 
 	case regexp.MustCompile(`movie`).MatchString(raw):
-		return scraper.Anime_MOVIE
+		return data.Anime_MOVIE
 
 	case regexp.MustCompile(`tv\s+special`).MatchString(raw):
-		return scraper.Anime_SPECIAL
+		return data.Anime_SPECIAL
 
 	default:
-		return scraper.Anime_UNKNOWN
+		return data.Anime_UNKNOWN
 	}
 }
 
@@ -176,13 +176,13 @@ func (p *Parser) EpisodesCount() int32 {
 	return 0
 }
 
-func (p *Parser) Episodes() []*scraper.Episode {
-	eps := make([]*scraper.Episode, 0)
+func (p *Parser) Episodes() []*data.Episode {
+	eps := make([]*data.Episode, 0)
 	p.doc.Find(`table#eplist tr[id*="eid"]`).Each(func(i int, s *goquery.Selection) {
 		log := p.log.WithField("ep_idx", i)
-		ep := new(scraper.Episode)
+		ep := new(data.Episode)
 		ep.Type = parseEpisodeType(s)
-		if ep.Type == scraper.Episode_UNKNOWN {
+		if ep.Type == data.Episode_UNKNOWN {
 			log.Info("unknown episode type")
 			return
 		}
@@ -280,10 +280,10 @@ func (p *Parser) EndDate() int64 {
 	return 0
 }
 
-func (p *Parser) Tags() []*scraper.Anime_Tag {
-	tags := make([]*scraper.Anime_Tag, 0)
+func (p *Parser) Tags() []*data.Anime_Tag {
+	tags := make([]*data.Anime_Tag, 0)
 	p.doc.Find("div.g_definitionlist tr.tags span.g_tag").Each(func(_ int, s *goquery.Selection) {
-		tag := new(scraper.Anime_Tag)
+		tag := new(data.Anime_Tag)
 		name := parseTagName(s)
 		if len(name) == 0 {
 			return
@@ -296,7 +296,7 @@ func (p *Parser) Tags() []*scraper.Anime_Tag {
 		}
 
 		tag.Name = name
-		tag.Source = &scraper.Anime_Tag_AnidbId{AnidbId: id}
+		tag.Source = &data.Anime_Tag_AnidbId{AnidbId: id}
 		tag.Description = parseTagInfo(s)
 
 		tags = append(tags, tag)
@@ -355,19 +355,19 @@ func parseSource(str string, sep string) (int32, error) {
 	return int32(s), nil
 }
 
-func parseEpisodeType(s *goquery.Selection) scraper.Episode_Type {
+func parseEpisodeType(s *goquery.Selection) data.Episode_Type {
 	raw := s.Find("td abbr").First().AttrOr("title", "")
 	raw = strings.TrimSpace(strings.ToLower(raw))
 
 	switch {
 	case regexp.MustCompile(`regular`).MatchString(raw):
-		return scraper.Episode_REGULAR
+		return data.Episode_REGULAR
 
 	case regexp.MustCompile(`special`).MatchString(raw):
-		return scraper.Episode_SPECIAL
+		return data.Episode_SPECIAL
 
 	default:
-		return scraper.Episode_UNKNOWN
+		return data.Episode_UNKNOWN
 	}
 }
 

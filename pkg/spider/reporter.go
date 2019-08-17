@@ -1,26 +1,27 @@
 package spider
 
 import (
+	"satelit-project/satelit-scraper/pkg/proto/scraping"
 	"sync"
 
-	"satelit-project/satelit-scraper/proto/scraper"
+	"satelit-project/satelit-scraper/pkg/proto/data"
 
 	"github.com/sirupsen/logrus"
 )
 
 type Transport interface {
-	Yield(ty *scraper.TaskYield) error
-	Finish(tf *scraper.TaskFinish) error
+	Yield(ty *scraping.TaskYield) error
+	Finish(tf *scraping.TaskFinish) error
 }
 
 type TaskReporter struct {
-	task  *scraper.Task
+	task  *scraping.Task
 	tr    Transport
 	group *sync.WaitGroup
 	log   *logrus.Entry
 }
 
-func NewTaskReporter(task *scraper.Task, tr Transport) *TaskReporter {
+func NewTaskReporter(task *scraping.Task, tr Transport) *TaskReporter {
 	log := logrus.WithField("task_id", task.Id)
 
 	return &TaskReporter{
@@ -32,13 +33,13 @@ func NewTaskReporter(task *scraper.Task, tr Transport) *TaskReporter {
 }
 
 // don't call after finish
-func (r *TaskReporter) Report(anime *scraper.Anime, scheduleID int32) {
+func (r *TaskReporter) Report(anime *data.Anime, scheduleID int32) {
 	r.group.Add(1)
 
 	go func(r *TaskReporter) {
 		defer r.group.Done()
 
-		msg := &scraper.TaskYield{
+		msg := &scraping.TaskYield{
 			TaskId:     r.task.Id,
 			ScheduleId: scheduleID,
 			Anime:      anime,
@@ -53,7 +54,7 @@ func (r *TaskReporter) Report(anime *scraper.Anime, scheduleID int32) {
 func (r *TaskReporter) Finish() {
 	r.group.Wait()
 
-	msg := &scraper.TaskFinish{
+	msg := &scraping.TaskFinish{
 		TaskId: r.task.Id,
 	}
 

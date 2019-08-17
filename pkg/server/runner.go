@@ -4,19 +4,20 @@ import (
 	"context"
 	"fmt"
 
-	"satelit-project/satelit-scraper/proto/scraper"
-	"satelit-project/satelit-scraper/proxy"
-	"satelit-project/satelit-scraper/proxy/provider"
-	"satelit-project/satelit-scraper/spider"
-	"satelit-project/satelit-scraper/spider/anidb"
+	"satelit-project/satelit-scraper/pkg/proto/data"
+	"satelit-project/satelit-scraper/pkg/proto/scraping"
+	"satelit-project/satelit-scraper/pkg/proxy"
+	"satelit-project/satelit-scraper/pkg/proxy/provider"
+	"satelit-project/satelit-scraper/pkg/spider"
+	"satelit-project/satelit-scraper/pkg/spider/anidb"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 )
 
 const RunnersLimit int = 16
 const ProxiesLimit int = 8
+const TitlesPerRun int32 = 8
 
 var runner *spiderRunner
 var limit = make(chan bool, RunnersLimit)
@@ -28,15 +29,15 @@ type spiderRunner struct {
 }
 
 type grpcTransport struct {
-	client scraper.ScraperTasksServiceClient
+	client scraping.ScraperTasksServiceClient
 }
 
-func (g grpcTransport) Yield(ty *scraper.TaskYield) error {
+func (g grpcTransport) Yield(ty *scraping.TaskYield) error {
 	_, err := g.client.YieldResult(context.Background(), ty)
 	return err
 }
 
-func (g grpcTransport) Finish(tf *scraper.TaskFinish) error {
+func (g grpcTransport) Finish(tf *scraping.TaskFinish) error {
 	_, err := g.client.CompleteTask(context.Background(), tf)
 	return err
 }
@@ -71,7 +72,7 @@ func Deinit() {
 	}
 }
 
-func RunScraper(context context.Context, intent *scraper.ScrapeIntent) error {
+func RunScraper(context context.Context, intent *scraping.ScrapeIntent) (bool, error) {
 	if runner == nil {
 		panic("spider runner is not initialized")
 	}
@@ -80,14 +81,24 @@ func RunScraper(context context.Context, intent *scraper.ScrapeIntent) error {
 	log.Info("received scraping intent")
 
 	limit <- true
-	client := scraper.NewScraperTasksServiceClient(runner.conn)
+	client := scraping.NewScraperTasksServiceClient(runner.conn)
 
-	stub := empty.Empty{}
-	task, err := client.CreateTask(context, &stub)
+	cmd := scraping.TaskCreate{
+		Limit:  TitlesPerRun,
+		Source: intent.Source,
+	}
+	task, err := client.CreateTask(context, &cmd)
+
 	if err != nil {
 		<-limit
 		log.Errorf("failed to create scraping task: %v", err)
-		return err
+		return false, err
+	}
+
+	if len(task.AnimeIds) == 0 {
+		<-limit
+		log.Infof("task is empty: %v", task.Id)
+		return false, nil
 	}
 
 	go func() {
@@ -100,19 +111,19 @@ func RunScraper(context context.Context, intent *scraper.ScrapeIntent) error {
 		<-limit
 	}()
 
-	return nil
+	return true, nil
 }
 
 type scrapeContext struct {
-	intent *scraper.ScrapeIntent
-	task   *scraper.Task
-	client scraper.ScraperTasksServiceClient
+	intent *scraping.ScrapeIntent
+	task   *scraping.Task
+	client scraping.ScraperTasksServiceClient
 	log    *logrus.Entry
 }
 
 func runScraper(ctx scrapeContext) {
 	switch ctx.intent.Source {
-	case scraper.ScrapeIntent_ANIDB:
+	case data.Source_ANIDB:
 		startAniDBScraping(ctx)
 	default:
 		ctx.log.Errorf("scraper for source is not implemented: %v", ctx.intent.Source)
