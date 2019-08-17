@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"satelit-project/satelit-scraper/pkg/proto/data"
+	"satelit-project/satelit-scraper/proto/data"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/sirupsen/logrus"

@@ -3,13 +3,13 @@ package server
 import (
 	"context"
 	"fmt"
+	"satelit-project/satelit-scraper/spider/anidb"
 
-	"satelit-project/satelit-scraper/pkg/proto/data"
-	"satelit-project/satelit-scraper/pkg/proto/scraping"
-	"satelit-project/satelit-scraper/pkg/proxy"
-	"satelit-project/satelit-scraper/pkg/proxy/provider"
-	"satelit-project/satelit-scraper/pkg/spider"
-	"satelit-project/satelit-scraper/pkg/spider/anidb"
+	"satelit-project/satelit-scraper/proto/data"
+	"satelit-project/satelit-scraper/proto/scraping"
+	"satelit-project/satelit-scraper/proxy"
+	"satelit-project/satelit-scraper/proxy/provider"
+	"satelit-project/satelit-scraper/spider"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"

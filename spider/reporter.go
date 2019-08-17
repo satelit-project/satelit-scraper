@@ -1,10 +1,10 @@
 package spider
 
 import (
-	"satelit-project/satelit-scraper/pkg/proto/scraping"
+	"satelit-project/satelit-scraper/proto/scraping"
 	"sync"
 
-	"satelit-project/satelit-scraper/pkg/proto/data"
+	"satelit-project/satelit-scraper/proto/data"
 
 	"github.com/sirupsen/logrus"
 )

@@ -3,11 +3,11 @@ package anidb
 import (
 	"bytes"
 	"fmt"
-	"satelit-project/satelit-scraper/pkg/spider"
+	"satelit-project/satelit-scraper/spider"
 	"time"
 
-	"satelit-project/satelit-scraper/pkg/proto/scraping"
-	"satelit-project/satelit-scraper/pkg/proxy"
+	"satelit-project/satelit-scraper/proto/scraping"
+	"satelit-project/satelit-scraper/proxy"
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
