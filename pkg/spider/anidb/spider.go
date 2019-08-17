@@ -3,11 +3,11 @@ package anidb
 import (
 	"bytes"
 	"fmt"
+	"satelit-project/satelit-scraper/pkg/spider"
 	"time"
 
-	"satelit-project/satelit-scraper/proto/scraper"
-	"satelit-project/satelit-scraper/proxy"
-	"satelit-project/satelit-scraper/spider"
+	"satelit-project/satelit-scraper/pkg/proto/scraping"
+	"satelit-project/satelit-scraper/pkg/proxy"
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
@@ -17,7 +17,7 @@ import (
 )
 
 type Spider struct {
-	task     *scraper.Task
+	task     *scraping.Task
 	reporter *spider.TaskReporter
 	proxies  []proxy.Proxy
 	urlMap   map[string]int32
@@ -26,7 +26,7 @@ type Spider struct {
 	log      *logrus.Entry
 }
 
-func NewSpider(task *scraper.Task, reporter *spider.TaskReporter) *Spider {
+func NewSpider(task *scraping.Task, reporter *spider.TaskReporter) *Spider {
 	log := logrus.WithField("spider_task", task.Id)
 
 	return &Spider{

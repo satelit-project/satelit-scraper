@@ -1,3 +1,7 @@
+run:
+  skip-files:
+    - "pkg/proto"
+
 linters:
   enable:
     - gofmt
