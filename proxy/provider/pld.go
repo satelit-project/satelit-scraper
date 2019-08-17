@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"satelit-project/satelit-scraper/pkg/proxy"
+	"satelit-project/satelit-scraper/proxy"
 	"strings"
 )
 

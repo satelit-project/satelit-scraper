@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net"
 
-	"satelit-project/satelit-scraper/pkg/proto/scraping"
+	"satelit-project/satelit-scraper/proto/scraping"
 
 	"google.golang.org/grpc"
 )
