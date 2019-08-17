@@ -1,6 +1,6 @@
 run:
   skip-files:
-    - "pkg/proto"
+    - "proto/"
 
 linters:
   enable:
