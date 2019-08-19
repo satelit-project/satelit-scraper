@@ -18,6 +18,6 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	google.golang.org/appengine v1.6.1 // indirect
-	google.golang.org/grpc v1.22.1
+	google.golang.org/grpc v1.23.0
 	gotest.tools v2.2.0+incompatible
 )
