@@ -95,7 +95,7 @@ func RunScraper(context context.Context, intent *scraping.ScrapeIntent) (bool, e
 		return false, err
 	}
 
-	if len(task.AnimeIds) == 0 {
+	if len(task.Jobs) == 0 {
 		<-limit
 		log.Infof("task is empty: %v", task.Id)
 		return false, nil
@@ -138,6 +138,7 @@ func startAniDBScraping(ctx scrapeContext) {
 	spdr := anidb.NewSpider(ctx.task, reporter)
 
 	if len(proxies) == 0 {
+		ctx.log.Error("no proxies fetched, skipping")
 		reporter.Finish()
 		return
 	}

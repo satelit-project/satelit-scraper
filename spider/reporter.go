@@ -33,16 +33,16 @@ func NewTaskReporter(task *scraping.Task, tr Transport) *TaskReporter {
 }
 
 // don't call after finish
-func (r *TaskReporter) Report(anime *data.Anime, scheduleID int32) {
+func (r *TaskReporter) Report(job *scraping.Job, anime *data.Anime) {
 	r.group.Add(1)
 
 	go func(r *TaskReporter) {
 		defer r.group.Done()
 
 		msg := &scraping.TaskYield{
-			TaskId:     r.task.Id,
-			ScheduleId: scheduleID,
-			Anime:      anime,
+			TaskId: r.task.Id,
+			JobId:  job.Id,
+			Anime:  anime,
 		}
 
 		if err := r.tr.Yield(msg); err != nil {

@@ -20,7 +20,7 @@ type Spider struct {
 	task     *scraping.Task
 	reporter *spider.TaskReporter
 	proxies  []proxy.Proxy
-	urlMap   map[string]int32
+	jobMap   map[string]int
 	timeout  time.Duration
 	delay    time.Duration
 	log      *logrus.Entry
@@ -33,7 +33,7 @@ func NewSpider(task *scraping.Task, reporter *spider.TaskReporter) *Spider {
 		task:     task,
 		reporter: reporter,
 		proxies:  make([]proxy.Proxy, 0),
-		urlMap:   make(map[string]int32),
+		jobMap:   make(map[string]int),
 		timeout:  20 * time.Second,
 		delay:    3 * time.Second,
 		log:      log,
@@ -107,12 +107,14 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 			return
 		}
 
-		scheduleID, ok := s.urlMap[r.Request.URL.String()]
+		jobIndex, ok := s.jobMap[r.Request.URL.String()]
 		if !ok {
-			s.log.Errorf("schedule id not found")
+			s.log.Errorf("job index not found")
+			return
 		}
 
-		s.reporter.Report(anime, scheduleID)
+		job := s.task.Jobs[jobIndex]
+		s.reporter.Report(job, anime)
 	})
 
 	coll.OnRequest(func(r *colly.Request) {
@@ -128,10 +130,10 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 
 func (s *Spider) makeURLs() []string {
 	var urls []string
-	for i := 0; i < len(s.task.AnimeIds); i++ {
-		url := urlForID(s.task.AnimeIds[i])
+	for i := 0; i < len(s.task.Jobs); i++ {
+		url := urlForID(s.task.Jobs[i].AnimeId)
 		urls = append(urls, url)
-		s.urlMap[url] = s.task.ScheduleIds[i]
+		s.jobMap[url] = i
 	}
 
 	return urls
