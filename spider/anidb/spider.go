@@ -3,17 +3,18 @@ package anidb
 import (
 	"bytes"
 	"fmt"
-	"satelit-project/satelit-scraper/spider"
 	"time"
-
-	"satelit-project/satelit-scraper/proto/scraping"
-	"satelit-project/satelit-scraper/proxy"
 
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/debug"
 	"github.com/gocolly/colly/extensions"
 	cproxy "github.com/gocolly/colly/proxy"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+
+	"satelit-project/satelit-scraper/logging"
+	"satelit-project/satelit-scraper/proto/scraping"
+	"satelit-project/satelit-scraper/proxy"
+	"satelit-project/satelit-scraper/spider"
 )
 
 type Spider struct {
@@ -23,11 +24,11 @@ type Spider struct {
 	jobMap   map[string]int
 	timeout  time.Duration
 	delay    time.Duration
-	log      *logrus.Entry
+	log      *zap.SugaredLogger
 }
 
 func NewSpider(task *scraping.Task, reporter *spider.TaskReporter) *Spider {
-	log := logrus.WithField("spider_task", task.Id)
+	log := logging.DefaultLogger().With("spider_task", task.Id)
 
 	return &Spider{
 		task:     task,
@@ -144,7 +145,7 @@ func urlForID(id int32) string {
 }
 
 type CollyLogger struct {
-	log *logrus.Entry
+	log *zap.SugaredLogger
 }
 
 func (l CollyLogger) Init() error {

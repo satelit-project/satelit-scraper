@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+
+	"satelit-project/satelit-scraper/logging"
 )
 
 type Provider interface {
@@ -19,11 +21,11 @@ type Fetcher struct {
 	limit    int
 	proto    Protocol
 	client   *http.Client
-	log      *logrus.Entry
+	log      *zap.SugaredLogger
 }
 
 func NewFetcher(provider Provider, limit int, proto Protocol) *Fetcher {
-	log := logrus.WithField("provider", provider.String())
+	log := logging.DefaultLogger().With("provider", provider.String())
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}

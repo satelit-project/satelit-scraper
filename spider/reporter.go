@@ -1,12 +1,13 @@
 package spider
 
 import (
-	"satelit-project/satelit-scraper/proto/scraping"
 	"sync"
 
-	"satelit-project/satelit-scraper/proto/data"
+	"go.uber.org/zap"
 
-	"github.com/sirupsen/logrus"
+	"satelit-project/satelit-scraper/logging"
+	"satelit-project/satelit-scraper/proto/data"
+	"satelit-project/satelit-scraper/proto/scraping"
 )
 
 type Transport interface {
@@ -18,11 +19,11 @@ type TaskReporter struct {
 	task  *scraping.Task
 	tr    Transport
 	group *sync.WaitGroup
-	log   *logrus.Entry
+	log   *zap.SugaredLogger
 }
 
 func NewTaskReporter(task *scraping.Task, tr Transport) *TaskReporter {
-	log := logrus.WithField("task_id", task.Id)
+	log := logging.DefaultLogger().With("task_id", task.Id)
 
 	return &TaskReporter{
 		task:  task,

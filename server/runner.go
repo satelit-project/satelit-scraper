@@ -3,16 +3,17 @@ package server
 import (
 	"context"
 	"fmt"
-	"satelit-project/satelit-scraper/spider/anidb"
 
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+
+	"satelit-project/satelit-scraper/logging"
 	"satelit-project/satelit-scraper/proto/data"
 	"satelit-project/satelit-scraper/proto/scraping"
 	"satelit-project/satelit-scraper/proxy"
 	"satelit-project/satelit-scraper/proxy/provider"
 	"satelit-project/satelit-scraper/spider"
-
-	"github.com/sirupsen/logrus"
-	"google.golang.org/grpc"
+	"satelit-project/satelit-scraper/spider/anidb"
 )
 
 const RunnersLimit int = 16
@@ -25,7 +26,7 @@ var limit = make(chan bool, RunnersLimit)
 type spiderRunner struct {
 	conn         *grpc.ClientConn
 	proxyFetcher *proxy.Fetcher
-	log          *logrus.Entry
+	log          *zap.SugaredLogger
 }
 
 type grpcTransport struct {
@@ -51,7 +52,7 @@ func Init(taskServerAddr string) {
 	}
 
 	fetcher := proxy.NewFetcher(provider.NewPLD(), ProxiesLimit, proxy.HTTP)
-	log := logrus.NewEntry(logrus.StandardLogger())
+	log := logging.DefaultLogger()
 
 	runner = &spiderRunner{
 		conn:         conn,
@@ -77,7 +78,7 @@ func RunScraper(context context.Context, intent *scraping.ScrapeIntent) (bool, e
 		panic("spider runner is not initialized")
 	}
 
-	log := runner.log.WithField("scraping-intent", intent.Id)
+	log := runner.log.With("scraping-intent", intent.Id)
 	log.Info("received scraping intent")
 
 	limit <- true
@@ -106,7 +107,7 @@ func RunScraper(context context.Context, intent *scraping.ScrapeIntent) (bool, e
 			intent: intent,
 			task:   task,
 			client: client,
-			log:    log.WithField("task", task.Id),
+			log:    log.With("task", task.Id),
 		})
 		<-limit
 	}()
@@ -118,7 +119,7 @@ type scrapeContext struct {
 	intent *scraping.ScrapeIntent
 	task   *scraping.Task
 	client scraping.ScraperTasksServiceClient
-	log    *logrus.Entry
+	log    *zap.SugaredLogger
 }
 
 func runScraper(ctx scrapeContext) {
