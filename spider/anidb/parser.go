@@ -9,10 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"satelit-project/satelit-scraper/proto/data"
-
 	"github.com/PuerkitoBio/goquery"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
+
+	"satelit-project/satelit-scraper/logging"
+	"satelit-project/satelit-scraper/proto/data"
 )
 
 type Error struct {
@@ -26,7 +27,7 @@ func (e *Error) Error() string {
 type Parser struct {
 	url *url.URL
 	doc *goquery.Document
-	log *logrus.Entry
+	log *zap.SugaredLogger
 }
 
 func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
@@ -35,12 +36,12 @@ func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
 		return nil, err
 	}
 
-	fields := logrus.Fields{"db": "anidb"}
+	log := logging.DefaultLogger().With("db", "anidb")
 	if id, err := parseSource(url.String(), "aid="); err == nil {
-		fields["id"] = id
+		log = log.With("id", id)
 	}
 
-	p := Parser{url, doc, logrus.WithFields(fields)}
+	p := Parser{url, doc, log}
 	return &p, nil
 }
 
@@ -158,7 +159,7 @@ func (p *Parser) EpisodesCount() int32 {
 func (p *Parser) Episodes() []*data.Episode {
 	eps := make([]*data.Episode, 0)
 	p.doc.Find(`table#eplist tr[id*="eid"]`).Each(func(i int, s *goquery.Selection) {
-		log := p.log.WithField("ep_idx", i)
+		log := p.log.With("ep_idx", i)
 		ep := new(data.Episode)
 		ep.Type = parseEpisodeType(s)
 		if ep.Type == data.Episode_UNKNOWN {
