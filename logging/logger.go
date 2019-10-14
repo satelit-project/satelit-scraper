@@ -19,6 +19,6 @@ func DefaultLogger() *zap.SugaredLogger {
 }
 
 func newLogger() (*zap.Logger, error) {
-	cfg := zap.NewDevelopmentConfig() // TODO: get from env
+	cfg := zap.NewProductionConfig() // TODO: get from env
 	return cfg.Build()
 }

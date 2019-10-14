@@ -37,7 +37,7 @@ func NewParser(url *url.URL, html io.Reader) (*Parser, error) {
 	}
 
 	log := logging.DefaultLogger().With("db", "anidb")
-	if id, err := parseSource(url.String(), "aid="); err == nil {
+	if id, err := parseSource(url.String(), "/"); err == nil {
 		log = log.With("id", id)
 	}
 
@@ -70,7 +70,7 @@ func (p *Parser) Anime() (*data.Anime, error) {
 func (p *Parser) Source() *data.Anime_Source {
 	var source data.Anime_Source
 
-	id, err := parseSource(p.url.String(), "aid=")
+	id, err := parseSource(p.url.String(), "/")
 	if err != nil {
 		p.log.Warnf("anidb id is malformed: %v", err)
 		return nil
@@ -139,8 +139,13 @@ func (p *Parser) EpisodesCount() int32 {
 	prop := strings.TrimSpace(row.Find("span[itemprop=\"numberOfEpisodes\"]").Text())
 	if ep, err := strconv.Atoi(prop); err == nil && len(prop) > 0 {
 		return int32(ep)
-	} else if err != nil {
-		p.log.Infof("ep number is not directly specified: %v", err)
+	} else if err != nil || len(prop) == 0 {
+		msg := "ep number is not directly specified"
+		if len(prop) > 0 {
+			msg = fmt.Sprintf("%s: %v", msg, err)
+		}
+
+		p.log.Infof(msg)
 	}
 
 	// try to parse from row's text
@@ -200,63 +205,55 @@ func (p *Parser) Episodes() []*data.Episode {
 
 func (p *Parser) StartDate() int64 {
 	raw := p.doc.Find(`div.g_definitionlist tr.year`).First()
+	rawDate := raw.Find("td.value").Text()
 
-	prop := raw.Find(` span[itemprop="startDate"]`).AttrOr("content", "")
-	d, err := parseDate(prop)
+	if !strings.Contains(rawDate, "?") {
+		prop := raw.Find(` span[itemprop="startDate"]`).AttrOr("content", "")
+		d, err := parseDate(prop)
+		if err == nil {
+			return d
+		}
+
+		prop = raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
+		d, err = parseDate(prop)
+		if err == nil {
+			return d
+		}
+	}
+
+	d, _, err := parseRawAirDate(rawDate)
 	if err == nil {
 		return d
 	}
 
-	p.log.Infof("startDate prop not found: %v", err)
-
-	prop = raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
-	d, err = parseDate(prop)
-	if err == nil {
-		return d
-	}
-
-	p.log.Infof("datePublished prop not found: %v", err)
-
-	prop = raw.Find("td.value").Text()
-	d, _, err = parseRawAirDate(prop)
-	if err == nil {
-		return d
-	}
-
-	p.log.Infof("raw air date not found: %v", err)
-	p.log.Warnf("failed to parse start date: %v", raw.Text())
-
+	p.log.Warnf("start air date not found: %s", raw.Text())
 	return 0
 }
 
 func (p *Parser) EndDate() int64 {
 	raw := p.doc.Find(`div.g_definitionlist tr.year`).First()
+	rawDate := raw.Find("td.value").Text()
 
-	prop := raw.Find(` span[itemprop="endDate"]`).AttrOr("content", "")
-	d, err := parseDate(prop)
+	if !strings.Contains(rawDate, "?") {
+		prop := raw.Find(` span[itemprop="endDate"]`).AttrOr("content", "")
+		d, err := parseDate(prop)
+		if err == nil {
+			return d
+		}
+	}
+
+	_, d, err := parseRawAirDate(rawDate)
 	if err == nil {
 		return d
 	}
 
-	p.log.Infof("endDate prop not found: %v", err)
-
-	prop = raw.Find("td.value").Text()
-	_, d, err = parseRawAirDate(prop)
-	if err == nil {
-		return d
-	}
-
-	p.log.Infof("raw air date not found: %v", err)
-
-	prop = raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
+	prop := raw.Find(`span[itemprop="datePublished"]`).AttrOr("content", "")
 	d, err = parseDate(prop)
 	if err == nil {
 		return d
 	}
 
-	p.log.Infof("datePublished prop not found: %v", err)
 	p.log.Warnf("failed to parse end date: %v", raw.Text())
-
 	return 0
 }
 
@@ -343,7 +340,7 @@ func parseEpisodesCount(raw string) (int32, error) {
 		return int32(ep), err
 	}
 
-	// no comma, numbers and questionmark, but some text, usually for 1ep titles
+	// no comma, numbers or questionmark, but some text, usually for 1ep titles
 	match = regexp.MustCompile(`^([^,\d?])+$`).FindStringSubmatch(raw)
 	if len(match) > 0 {
 		return 1, nil
@@ -422,12 +419,7 @@ func parseEpisodeDuration(s *goquery.Selection) (float64, error) {
 
 func parseEpisodeDate(s *goquery.Selection) (int64, error) {
 	raw := s.Find("td.airdate").First()
-	d, err := parseDate(raw.AttrOr("content", ""))
-	if err == nil {
-		return d, nil
-	}
-
-	d, err = parseAltDate(raw.Text())
+	d, err := parseDate(raw.AttrOr("content", raw.Text()))
 	if err == nil {
 		return d, nil
 	}
@@ -437,17 +429,14 @@ func parseEpisodeDate(s *goquery.Selection) (int64, error) {
 
 func parseDate(s string) (int64, error) {
 	s = strings.TrimSpace(s)
-	t, err := time.Parse("2006-01-02", s)
-	if err != nil {
-		return 0, err
+	var format string
+	if strings.Contains(s, "-") {
+		format = "2006-01-02"
+	} else {
+		format = "02.01.2006"
 	}
 
-	return t.Unix(), nil
-}
-
-func parseAltDate(s string) (int64, error) {
-	s = strings.TrimSpace(s)
-	t, err := time.Parse("02.01.2006", s)
+	t, err := time.Parse(format, s)
 	if err != nil {
 		return 0, err
 	}
@@ -457,22 +446,25 @@ func parseAltDate(s string) (int64, error) {
 
 func parseRawAirDate(s string) (int64, int64, error) {
 	s = strings.TrimSpace(s)
-	match := regexp.MustCompile(`(\d{2}.\d{2}.\d{4}).+(till|,).+(\d{2}.\d{2}.\d{4})`).FindStringSubmatch(s)
-	if len(match) != 4 {
+	match := regexp.MustCompile(`^([\d.]+)(\s*(till|,)(\s+[\d.]+)?)?`).FindStringSubmatch(s)
+	if len(match) < 2 {
 		return 0, 0, &Error{"raw air date unknown format"}
 	}
 
-	start, err := time.Parse("02.01.2006", match[1])
-	if err != nil {
-		return 0, 0, err
+	match = match[1:]
+	start, err := parseDate(match[0])
+	if len(match) == 1 || len(match[1]) == 0 || err != nil {
+		// only one date means it aired in one day
+		return start, start, err
 	}
 
-	end, err := time.Parse("02.01.2006", match[3])
-	if err != nil {
-		return 0, 0, err
+	if len(match) < 4 || len(match[3]) == 0 {
+		// means that end air date is unknown
+		return start, 0, nil
 	}
 
-	return start.Unix(), end.Unix(), nil
+	end, err := parseDate(match[3])
+	return start, end, err
 }
 
 func parseTagName(s *goquery.Selection) string {
@@ -493,8 +485,8 @@ func parseTagInfo(s *goquery.Selection) string {
 
 func parseTagID(s *goquery.Selection) (int32, error) {
 	raw := s.Find("a.tooltip").First().AttrOr("href", "")
-	match := regexp.MustCompile(`tagid=(\d+)`).FindStringSubmatch(raw)
-	if len(match) == 0 {
+	match := regexp.MustCompile(`/(\d+)/`).FindStringSubmatch(raw)
+	if len(match) != 2 {
 		return 0, &Error{fmt.Sprintf("not tag id: %v", raw)}
 	}
 
