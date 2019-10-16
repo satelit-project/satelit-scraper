@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"satelit-project/satelit-scraper/proxy"
 	"strings"
+
+	"shitty.moe/satelit-project/satelit-scraper/proxy"
 )
 
 type PLD func(proxy.Protocol) ([]proxy.Proxy, error)

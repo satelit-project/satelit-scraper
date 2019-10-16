@@ -8,7 +8,7 @@ import (
 
 	"go.uber.org/zap"
 
-	"satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
 )
 
 type Provider interface {

@@ -7,13 +7,13 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"satelit-project/satelit-scraper/logging"
-	"satelit-project/satelit-scraper/proto/data"
-	"satelit-project/satelit-scraper/proto/scraping"
-	"satelit-project/satelit-scraper/proxy"
-	"satelit-project/satelit-scraper/proxy/provider"
-	"satelit-project/satelit-scraper/spider"
-	"satelit-project/satelit-scraper/spider/anidb"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/proto/data"
+	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
+	"shitty.moe/satelit-project/satelit-scraper/proxy"
+	"shitty.moe/satelit-project/satelit-scraper/proxy/provider"
+	"shitty.moe/satelit-project/satelit-scraper/spider"
+	"shitty.moe/satelit-project/satelit-scraper/spider/anidb"
 )
 
 const RunnersLimit int = 16

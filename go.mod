@@ -1,4 +1,4 @@
-module satelit-project/satelit-scraper
+module shitty.moe/satelit-project/satelit-scraper
 
 go 1.13
 
