@@ -2,6 +2,9 @@ module shitty.moe/satelit-project/import-gensta
 
 go 1.13
 
-require satelit-project/satelit-scraper v0.0.0
+require (
+	github.com/golang/protobuf v1.3.2
+	shitty.moe/satelit-project/satelit-scraper v0.0.0
+)
 
-replace satelit-project/satelit-scraper v0.0.0 => ../..
+replace shitty.moe/satelit-project/satelit-scraper v0.0.0 => ../..
