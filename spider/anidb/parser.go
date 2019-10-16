@@ -12,8 +12,8 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"go.uber.org/zap"
 
-	"satelit-project/satelit-scraper/logging"
-	"satelit-project/satelit-scraper/proto/data"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/proto/data"
 )
 
 type Error struct {

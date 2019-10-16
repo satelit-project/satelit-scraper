@@ -5,9 +5,9 @@ import (
 
 	"go.uber.org/zap"
 
-	"satelit-project/satelit-scraper/logging"
-	"satelit-project/satelit-scraper/proto/data"
-	"satelit-project/satelit-scraper/proto/scraping"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/proto/data"
+	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 )
 
 type Transport interface {

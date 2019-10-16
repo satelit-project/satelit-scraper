@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"satelit-project/satelit-scraper/proxy"
+	"shitty.moe/satelit-project/satelit-scraper/proxy"
 	"strings"
 )
 
