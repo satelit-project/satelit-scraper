@@ -10,34 +10,31 @@ import (
 	"shitty.moe/satelit-project/satelit-scraper/proxy"
 )
 
+// proxy-list.download
 type PLD func(proxy.Protocol) ([]proxy.Proxy, error)
 
 func NewPLD() PLD {
-	return fetch
-}
-
-func (p PLD) String() string {
-	return "proxy-list.download"
+	return fetchPLD
 }
 
 func (p PLD) Fetch(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	return p(proto)
 }
 
-func fetch(proto proxy.Protocol) ([]proxy.Proxy, error) {
+func fetchPLD(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	url := fmt.Sprintf("https://www.proxy-list.download/api/v1/get?type=%s", proto.String())
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 
-	val, err := parse(resp.Body, proto)
+	val, err := parsePLD(resp.Body, proto)
 	_ = resp.Body.Close()
 
 	return val, err
 }
 
-func parse(buf io.Reader, proto proxy.Protocol) ([]proxy.Proxy, error) {
+func parsePLD(buf io.Reader, proto proxy.Protocol) ([]proxy.Proxy, error) {
 	proxies := make([]proxy.Proxy, 0)
 	reader := bufio.NewReader(buf)
 
