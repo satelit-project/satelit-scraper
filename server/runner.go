@@ -51,7 +51,12 @@ func Init(taskServerAddr string) {
 		panic(fmt.Sprintf("failed to initiate connection to %s: %v\n", taskServerAddr, err))
 	}
 
-	fetcher := proxy.NewFetcher(provider.NewPLD(), ProxiesLimit, proxy.HTTP)
+	robinProvider := provider.NewRoundRobin([]proxy.Provider{
+		provider.NewPLD(),
+		provider.NewPSC(),
+	})
+
+	fetcher := proxy.NewFetcher(robinProvider, ProxiesLimit, proxy.HTTP)
 	log := logging.DefaultLogger()
 
 	runner = &spiderRunner{

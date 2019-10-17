@@ -1,7 +1,6 @@
 package proxy
 
 import (
-	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -12,7 +11,6 @@ import (
 )
 
 type Provider interface {
-	fmt.Stringer
 	Fetch(proto Protocol) ([]Proxy, error)
 }
 
@@ -25,7 +23,7 @@ type Fetcher struct {
 }
 
 func NewFetcher(provider Provider, limit int, proto Protocol) *Fetcher {
-	log := logging.DefaultLogger().With("provider", provider.String())
+	log := logging.DefaultLogger()
 	client := &http.Client{
 		Timeout: 10 * time.Second,
 	}
@@ -51,6 +49,8 @@ func (f *Fetcher) Fetch() []Proxy {
 		return make([]Proxy, 0)
 	}
 
+	shuffle(list)
+
 	f.log.Infof("checking proxies")
 	live := make([]Proxy, 0, min(f.limit, len(list)))
 	for i := 0; i < len(list) && len(live) < f.limit; i++ {
@@ -63,7 +63,6 @@ func (f *Fetcher) Fetch() []Proxy {
 		live = append(live, proxy)
 	}
 
-	shuffle(live)
 	return live
 }
 
