@@ -299,8 +299,8 @@ func (p *Parser) Description() string {
 	raw := p.doc.Find(`div.desc[itemprop="description"]`).First().Text()
 	raw = strings.TrimSpace(raw)
 
-	// remove '* Based on ...' line
-	rg := regexp.MustCompile(`(?mi)^\*\s?based\son.+$`)
+	// remove '* ...' line
+	rg := regexp.MustCompile(`(?m)^\*\s+.+$`)
 	raw = rg.ReplaceAllString(raw, "")
 
 	// remove 'Source: ...' line
