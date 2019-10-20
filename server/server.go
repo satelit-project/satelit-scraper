@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"net"
 
-	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
-
 	"google.golang.org/grpc"
+
+	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
+	"shitty.moe/satelit-project/satelit-scraper/proxy"
+	"shitty.moe/satelit-project/satelit-scraper/proxy/provider"
 )
 
-type scraperServiceServer struct{}
+// TODO: move to config
+const _tasksAddr string = "127.0.0.1:10602"
+
+type scraperServiceServer struct {
+	tasksClient *grpc.ClientConn
+	proxies     *proxy.Fetcher
+}
 
 func Serve(port int) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
@@ -18,18 +27,36 @@ func Serve(port int) error {
 		return err
 	}
 
-	grpcServer := grpc.NewServer()
-	scraping.RegisterScraperServiceServer(grpcServer, &scraperServiceServer{})
-	err = grpcServer.Serve(lis)
+	conn, err := grpc.Dial(_tasksAddr, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
 
-	return nil
+	robinProvider := provider.NewRoundRobin([]proxy.Provider{
+		provider.NewPLD(),
+		provider.NewPSC(),
+	})
+
+	grpc := grpc.NewServer()
+	server := scraperServiceServer{
+		tasksClient: conn,
+		proxies:     proxy.NewFetcher(robinProvider, ProxiesLimit, proxy.HTTP),
+	}
+
+	scraping.RegisterScraperServiceServer(grpc, &server)
+
+	logging.DefaultLogger().Infof("Start listening on port %d", port)
+	err = grpc.Serve(lis)
+	if err != nil {
+		return err
+	}
+
+	return conn.Close()
 }
 
 func (s *scraperServiceServer) StartScraping(ctx context.Context, intent *scraping.ScrapeIntent) (*scraping.ScrapeIntentResult, error) {
-	mayContinue, err := RunScraper(ctx, intent)
+	runner := NewRunner(s.tasksClient, s.proxies, logging.DefaultLogger())
+	mayContinue, err := runner.Run(ctx, intent)
 	if err != nil {
 		return nil, err
 	}
