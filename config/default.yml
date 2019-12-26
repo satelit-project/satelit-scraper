@@ -1,0 +1,10 @@
+serving:
+  port: 9050
+  halt-timeout: 60
+  task-address: {{ if .ST_TASKS_ADDRESS }}"{{ .ST_TASKS_ADDRESS }}"{{ else }}"127.0.0.1:10602"{{ end }}
+anidb:
+  url-template: "https://anidb.net/anime/%d"
+  timeout: 30
+  delay: 3
+logging:
+  profile: {{ if .ST_LOG_PROFILE }}"{{ .ST_LOG_PROFILE }}"{{ else }}"dev"{{ end }}

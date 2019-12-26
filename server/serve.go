@@ -13,10 +13,7 @@ import (
 	"shitty.moe/satelit-project/satelit-scraper/proxy/provider"
 )
 
-// TODO: move to config
-const _tasksAddr string = "127.0.0.1:10602"
-
-type scraperServiceServer struct {
+type ScrapingService struct {
 	tasksClient *grpc.ClientConn
 	proxies     *proxy.Fetcher
 }

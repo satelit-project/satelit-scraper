@@ -9,6 +9,7 @@ import (
 	"github.com/gocolly/colly/extensions"
 	cproxy "github.com/gocolly/colly/proxy"
 
+	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
@@ -20,24 +21,22 @@ import (
 type Spider struct {
 	task     *scraping.Task
 	reporter *spider.TaskReporter
+	config   *config.AniDB
 	proxies  []proxy.Proxy
 	jobMap   map[string]int
-	timeout  time.Duration
-	delay    time.Duration
 	log      *logging.Logger
 }
 
 // Creates and returns new Spider instance.
-func NewSpider(reporter *spider.TaskReporter, log *logging.Logger) Spider {
+func NewSpider(reporter *spider.TaskReporter, config *config.AniDB, log *logging.Logger) Spider {
 	log = log.With("anidb_task", reporter.Task.Id)
 
 	return Spider{
 		task:     reporter.Task,
 		reporter: reporter,
+		config:   config,
 		proxies:  nil,
 		jobMap:   make(map[string]int),
-		timeout:  30 * time.Second,
-		delay:    3 * time.Second,
 		log:      log,
 	}
 }
@@ -45,16 +44,6 @@ func NewSpider(reporter *spider.TaskReporter, log *logging.Logger) Spider {
 // Sets list of proxy servers to use when making HTTP requests.
 func (s *Spider) SetProxies(proxies []proxy.Proxy) {
 	s.proxies = proxies
-}
-
-// Sets a timeout for requesting HTTP page to scrape.
-func (s *Spider) SetTimeout(timeout time.Duration) {
-	s.timeout = timeout
-}
-
-// Sets a delay for making HTTP requests.
-func (s *Spider) SetDelay(delay time.Duration) {
-	s.delay = delay
 }
 
 // Starts scraping process.
@@ -67,10 +56,10 @@ func (s *Spider) Run() {
 
 	s.setupProxy(coll)
 	s.setupCallbacks(coll)
-	coll.SetRequestTimeout(s.timeout)
+	coll.SetRequestTimeout(time.Duration(s.config.Timeout) * time.Second)
 	coll.DisableCookies()
 	extensions.RandomUserAgent(coll)
-	_ = coll.Limit(&colly.LimitRule{DomainGlob: "*", Delay: s.delay})
+	_ = coll.Limit(&colly.LimitRule{DomainGlob: "*", Delay: time.Duration(s.config.Delay) * time.Second})
 
 	animeURLs := s.makeURLs()
 	for _, animeURL := range animeURLs {
@@ -145,7 +134,7 @@ func (s *Spider) makeURLs() []string {
 	var urls []string
 	for i := 0; i < len(s.task.Jobs); i++ {
 		id := s.task.Jobs[i].AnimeId
-		url := fmt.Sprintf("https://anidb.net/anime/%d", id)
+		url := fmt.Sprintf(s.config.URLTemplate, id)
 		urls = append(urls, url)
 		s.jobMap[url] = i
 	}

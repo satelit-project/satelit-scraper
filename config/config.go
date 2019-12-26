@@ -14,6 +14,7 @@ import (
 type Config struct {
 	Serving *Serving `yaml:"serving"`
 	AniDB *AniDB `yaml:"anidb"`
+	Logging Logging `yaml:"logging"`
 }
 
 // Server configuration.
@@ -23,11 +24,27 @@ type Serving struct {
 
 	// Timeout for graceful shutdown.
 	HaltTimeout uint64 `yaml:"halt-timeout"`
+
+	// Address of scraping tasks service.
+	TaskAddress string `yaml:"task-address"`
 }
 
 // AniDB specific configuration.
 type AniDB struct {
+	// Template to create AniDB anime URL from anime ID.
 	URLTemplate string `yaml:"url-template"`
+
+	// Timeout for AniDB requests.
+	Timeout uint64 `yaml:"timeout"`
+
+	// Delay between AniDB requests.
+	Delay uint64 `yaml:"delay"`
+}
+
+// Logging configuration.
+type Logging struct {
+	// Logging profile.
+	Profile string `yaml:"profile"`
 }
 
 // Returns default app configuration or error if failed to read it.
