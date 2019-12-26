@@ -6,17 +6,17 @@ import (
 	"time"
 
 	"github.com/gocolly/colly"
-	"github.com/gocolly/colly/debug"
 	"github.com/gocolly/colly/extensions"
 	cproxy "github.com/gocolly/colly/proxy"
-	"go.uber.org/zap"
 
 	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 	"shitty.moe/satelit-project/satelit-scraper/proxy"
 	"shitty.moe/satelit-project/satelit-scraper/spider"
 )
 
+// Performs AniDB scraping task.
 type Spider struct {
 	task     *scraping.Task
 	reporter *spider.TaskReporter
@@ -24,40 +24,45 @@ type Spider struct {
 	jobMap   map[string]int
 	timeout  time.Duration
 	delay    time.Duration
-	log      *zap.SugaredLogger
+	log      *logging.Logger
 }
 
-func NewSpider(task *scraping.Task, reporter *spider.TaskReporter) *Spider {
-	log := logging.DefaultLogger().With("spider_task", task.Id)
+// Creates and returns new Spider instance.
+func NewSpider(reporter *spider.TaskReporter, log *logging.Logger) Spider {
+	log = log.With("anidb_task", reporter.Task.Id)
 
-	return &Spider{
-		task:     task,
+	return Spider{
+		task:     reporter.Task,
 		reporter: reporter,
-		proxies:  make([]proxy.Proxy, 0),
+		proxies:  nil,
 		jobMap:   make(map[string]int),
-		timeout:  20 * time.Second,
+		timeout:  30 * time.Second,
 		delay:    3 * time.Second,
 		log:      log,
 	}
 }
 
+// Sets list of proxy servers to use when making HTTP requests.
 func (s *Spider) SetProxies(proxies []proxy.Proxy) {
 	s.proxies = proxies
 }
 
+// Sets a timeout for requesting HTTP page to scrape.
 func (s *Spider) SetTimeout(timeout time.Duration) {
 	s.timeout = timeout
 }
 
+// Sets a delay for making HTTP requests.
 func (s *Spider) SetDelay(delay time.Duration) {
 	s.delay = delay
 }
 
+// Starts scraping process.
 func (s *Spider) Run() {
 	coll := colly.NewCollector(
 		colly.MaxDepth(1),
 		colly.Async(true),
-		colly.Debugger(CollyLogger{s.log}),
+		colly.Debugger(logging.CollyLogger{Log: s.log}),
 	)
 
 	s.setupProxy(coll)
@@ -79,7 +84,12 @@ func (s *Spider) Run() {
 	s.reporter.Finish()
 }
 
+// Setups proxy for the scraper.
 func (s *Spider) setupProxy(coll *colly.Collector) {
+	if len(s.proxies) == 0 {
+		return
+	}
+
 	proxies := make([]string, 0, len(s.proxies))
 	for _, p := range s.proxies {
 		proxies = append(proxies, p.String())
@@ -94,9 +104,10 @@ func (s *Spider) setupProxy(coll *colly.Collector) {
 	coll.SetProxyFunc(prx)
 }
 
+// Setups Colly callbacks for the spider.
 func (s *Spider) setupCallbacks(coll *colly.Collector) {
 	coll.OnResponse(func(r *colly.Response) {
-		parser, err := NewParser(r.Request.URL, bytes.NewReader(r.Body))
+		parser, err := anidb.NewParser(r.Request.URL, bytes.NewReader(r.Body), s.log)
 		if err != nil {
 			s.log.Errorf("failed to create parser: %v", err)
 			return
@@ -129,29 +140,15 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 	})
 }
 
+// Makes list of AniDB URLs to visit for parsing. The method will also fill scraper's jobMap property.
 func (s *Spider) makeURLs() []string {
 	var urls []string
 	for i := 0; i < len(s.task.Jobs); i++ {
-		url := urlForID(s.task.Jobs[i].AnimeId)
+		id := s.task.Jobs[i].AnimeId
+		url := fmt.Sprintf("https://anidb.net/anime/%d", id)
 		urls = append(urls, url)
 		s.jobMap[url] = i
 	}
 
 	return urls
-}
-
-func urlForID(id int32) string {
-	return fmt.Sprintf("https://anidb.net/perl-bin/animedb.pl?show=anime&aid=%d", id)
-}
-
-type CollyLogger struct {
-	log *zap.SugaredLogger
-}
-
-func (l CollyLogger) Init() error {
-	return nil
-}
-
-func (l CollyLogger) Event(e *debug.Event) {
-	l.log.Debugf("%d [%6d - %s] %q\n", e.CollectorID, e.RequestID, e.Type, e.Values)
 }

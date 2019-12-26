@@ -43,7 +43,7 @@ func (f *Fetcher) SetProxyTimeout(timeout time.Duration) {
 }
 
 // Fetches and returns list of available proxy servers or empty slice if no proxies available.
-func (f Fetcher) Fetch() []Proxy {
+func (f *Fetcher) Fetch() []Proxy {
 	f.log.Infof("fetching proxies")
 	list, err := f.provider.Fetch(f.proto)
 	if err != nil {
