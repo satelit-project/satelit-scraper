@@ -69,7 +69,7 @@ func testAnidbEntry(t *testing.T, id string, url *url.URL, dir string) {
 }
 
 func testAnidbData(t *testing.T, url *url.URL, html io.Reader, json io.Reader) {
-	parser, err := NewParser(url, html)
+	parser, err := NewParser(url, html, nil)
 	if err != nil {
 		assert.Error(t, err, "Failed to parse html")
 	}
