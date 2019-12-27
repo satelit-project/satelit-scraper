@@ -2,6 +2,7 @@ package config
 
 import (
 	"bytes"
+	"time"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -24,9 +25,15 @@ type Serving struct {
 
 	// Timeout for graceful shutdown.
 	HaltTimeout uint64 `yaml:"halt-timeout"`
+}
 
+// Scraping configuration.
+type Scraping struct {
 	// Address of scraping tasks service.
 	TaskAddress string `yaml:"task-address"`
+
+	// Timeout for reporting scraping progress to external service.
+	ReportTimeout time.Duration `yaml:"report-timeout"`
 }
 
 // AniDB specific configuration.

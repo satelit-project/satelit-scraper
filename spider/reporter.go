@@ -24,7 +24,7 @@ type TaskReporter struct {
 }
 
 // Reports that there's new scraped anime entity for the task.
-func (r *TaskReporter) Report(job *scraping.Job, anime *data.Anime) error {
+func (r TaskReporter) Report(job *scraping.Job, anime *data.Anime) error {
 	msg := &scraping.TaskYield{
 		TaskId: r.Task.Id,
 		JobId:  job.Id,
@@ -35,7 +35,7 @@ func (r *TaskReporter) Report(job *scraping.Job, anime *data.Anime) error {
 }
 
 // Reports that scraping has been finished for the task.
-func (r *TaskReporter) Finish() error {
+func (r TaskReporter) Finish() error {
 	msg := &scraping.TaskFinish{
 		TaskId: r.Task.Id,
 	}
