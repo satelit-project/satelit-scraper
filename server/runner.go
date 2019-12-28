@@ -2,43 +2,53 @@ package server
 
 import (
 	"context"
+	"time"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 
-	"shitty.moe/satelit-project/satelit-scraper/proto/data"
+	"shitty.moe/satelit-project/satelit-scraper/config"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 	"shitty.moe/satelit-project/satelit-scraper/proxy"
+	"shitty.moe/satelit-project/satelit-scraper/proxy/provider"
 	"shitty.moe/satelit-project/satelit-scraper/spider"
 	"shitty.moe/satelit-project/satelit-scraper/spider/anidb"
 )
 
-const RunnersLimit int = 16
+// Number of proxies to fetch for scraping.
 const ProxiesLimit int = 8
+
+// Number of jobs to request per spider run.
 const TitlesPerRun int32 = 8
 
-var limit = make(chan bool, RunnersLimit)
-
-type SpiderRunner struct {
-	conn         *grpc.ClientConn
-	proxyFetcher *proxy.Fetcher
-	log          *zap.SugaredLogger
+// Runner for AniDB spider.
+type AniDBRunner struct {
+	cfg      *config.Scraping
+	anidbCfg *config.AniDB
+	log      *logging.Logger
 }
 
-func NewRunner(conn *grpc.ClientConn, proxy *proxy.Fetcher, log *zap.SugaredLogger) SpiderRunner {
-	return SpiderRunner{
-		conn:         conn,
-		proxyFetcher: proxy,
-		log:          log,
+// Creates new runner instance.
+func NewRunner(cfg *config.Scraping, anidbCfg *config.AniDB, log *logging.Logger) AniDBRunner {
+	return AniDBRunner{
+		cfg:      cfg,
+		anidbCfg: anidbCfg,
+		log:      log,
 	}
 }
 
-func (s SpiderRunner) Run(context context.Context, intent *scraping.ScrapeIntent) (bool, error) {
-	log := s.log.With("scraping-intent", intent.Id)
-	log.Info("received scraping intent")
+// Runs AniDB spider for provided intent. Returns true if there's more data to scrape.
+func (r AniDBRunner) Run(context context.Context, intent *scraping.ScrapeIntent) (bool, error) {
+	log := r.log.With("anidb-intent", intent.Id)
+	log.Infof("received scraping intent: %s", intent.Id)
 
-	limit <- true
-	client := scraping.NewScraperTasksServiceClient(s.conn)
+	conn, err := grpc.Dial(r.cfg.TaskAddress, grpc.WithInsecure())
+	if err != nil {
+		return false, nil
+	}
+
+	client := scraping.NewScraperTasksServiceClient(conn)
+	defer conn.Close()
 
 	cmd := scraping.TaskCreate{
 		Limit:  TitlesPerRun,
@@ -47,71 +57,55 @@ func (s SpiderRunner) Run(context context.Context, intent *scraping.ScrapeIntent
 
 	task, err := client.CreateTask(context, &cmd)
 	if err != nil {
-		<-limit
 		log.Errorf("failed to create scraping task: %v", err)
 		return false, err
 	}
 
 	if len(task.Jobs) == 0 {
-		<-limit
 		log.Infof("task is empty: %v", task.Id)
 		return false, nil
 	}
 
-	go func() {
-		runScraper(scrapeContext{
-			intent: intent,
-			task:   task,
-			client: client,
-			log:    log.With("task", task.Id),
-		})
-		<-limit
-	}()
+	startAniDBScraping(spiderContext{
+		intent: intent,
+		task:   task,
+		client: client,
+		cfg:    r.anidbCfg,
+		log:    log,
+	})
 
 	return true, nil
 }
 
-type grpcTransport struct {
+// Context for running AniDB spiders.
+type spiderContext struct {
+	intent *scraping.ScrapeIntent
+	task   *scraping.Task
 	client scraping.ScraperTasksServiceClient
+	cfg    *config.AniDB
+	log    *logging.Logger
 }
 
-func (g grpcTransport) Yield(ty *scraping.TaskYield) error {
-	_, err := g.client.YieldResult(context.Background(), ty)
-	return err
-}
+// Starts AniDB spider with data from provided context.
+func startAniDBScraping(ctx spiderContext) {
+	log := ctx.log.With("task", ctx.task.Id)
+	providers := provider.NewRoundRobin([]proxy.Provider{
+		provider.NewPLD(),
+		provider.NewPSC(),
+	})
 
-func (g grpcTransport) Finish(tf *scraping.TaskFinish) error {
-	_, err := g.client.CompleteTask(context.Background(), tf)
-	return err
-}
+	fetcher := proxy.NewFetcher(providers, ProxiesLimit, proxy.HTTP, log)
+	proxies := fetcher.Fetch()
 
-type scrapeContext struct {
-	intent  *scraping.ScrapeIntent
-	task    *scraping.Task
-	client  scraping.ScraperTasksServiceClient
-	proxies *proxy.Fetcher
-	log     *zap.SugaredLogger
-}
-
-func runScraper(ctx scrapeContext) {
-	switch ctx.intent.Source {
-	case data.Source_ANIDB:
-		startAniDBScraping(ctx)
-	default:
-		ctx.log.Errorf("scraper for source is not implemented: %v", ctx.intent.Source)
-	}
-}
-
-func startAniDBScraping(ctx scrapeContext) {
-	proxies := ctx.proxies.Fetch()
-
-	tr := grpcTransport{client: ctx.client}
-	reporter := spider.NewTaskReporter(ctx.task, tr)
-	spdr := anidb.NewSpider(ctx.task, reporter)
+	tr := grpcTransport{ctx.client, time.Duration(ctx.cfg.Timeout) * time.Second}
+	reporter := spider.TaskReporter{Task: ctx.task, Transport: tr}
+	spdr := anidb.NewSpider(&reporter, ctx.cfg, log)
 
 	if len(proxies) == 0 {
-		ctx.log.Error("no proxies fetched, skipping")
-		reporter.Finish()
+		log.Errorf("no proxies fetched, skipping")
+		if err := reporter.Finish(); err != nil {
+			log.Errorf("failed to report task finish: %v", err)
+		}
 		return
 	}
 
