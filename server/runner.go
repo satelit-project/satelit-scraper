@@ -94,7 +94,7 @@ func startAniDBScraping(ctx spiderContext) {
 		provider.NewPSC(),
 	})
 
-	fetcher := proxy.NewFetcher(providers, ProxiesLimit, proxy.HTTP, log)
+	fetcher := proxy.NewFetcher(providers, proxyLimit(ctx.task), proxy.HTTP, log)
 	proxies := fetcher.Fetch()
 
 	tr := grpcTransport{ctx.client, time.Duration(ctx.cfg.Timeout) * time.Second}
@@ -111,4 +111,13 @@ func startAniDBScraping(ctx spiderContext) {
 
 	spdr.SetProxies(proxies)
 	spdr.Run()
+}
+
+// Returns desired number of proxies to fetch for the task.
+func proxyLimit(t *scraping.Task) int {
+	if len(t.Jobs) < ProxiesLimit {
+		return len(t.Jobs)
+	}
+
+	return ProxiesLimit
 }
