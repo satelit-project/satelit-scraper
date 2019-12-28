@@ -1,7 +1,6 @@
 package anidb
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -61,12 +60,12 @@ func parseTagID(s *goquery.Selection) (int32, error) {
 	raw := s.Find("a.tooltip").First().AttrOr("href", "")
 	match := regexp.MustCompile(`/(\d+)/`).FindStringSubmatch(raw)
 	if len(match) != 2 {
-		return 0, errors.New(fmt.Sprintf("not tag id: %v", raw))
+		return 0, fmt.Errorf("not tag id: %v", raw)
 	}
 
 	id, err := strconv.Atoi(match[1])
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("parsing failed: %v", err))
+		return 0, fmt.Errorf("parsing failed: %v", err)
 	}
 
 	return int32(id), nil

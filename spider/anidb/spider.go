@@ -70,7 +70,9 @@ func (s *Spider) Run() {
 	}
 
 	coll.Wait()
-	s.reporter.Finish()
+	if err := s.reporter.Finish(); err != nil {
+		s.log.Errorf("failed to report scraping finished: %v", err)
+	}
 }
 
 // Setups proxy for the scraper.
@@ -115,7 +117,9 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 		}
 
 		job := s.task.Jobs[jobIndex]
-		s.reporter.Report(job, anime)
+		if err = s.reporter.Report(job, anime); err != nil {
+			s.log.Errorf("failed to report job: %v", err)
+		}
 	})
 
 	coll.OnRequest(func(r *colly.Request) {

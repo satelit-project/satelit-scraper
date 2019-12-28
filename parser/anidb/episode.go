@@ -1,7 +1,6 @@
 package anidb
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -77,7 +76,7 @@ func parseEpisodeNumber(s *goquery.Selection) (int32, error) {
 	raw := s.Find("td.eid abbr").First().Text()
 	match := regexp.MustCompile(`\d+`).FindStringSubmatch(raw)
 	if len(match) == 0 {
-		return 0, errors.New(fmt.Sprintf("not found: %v", raw))
+		return 0, fmt.Errorf("not found: %v", raw)
 	}
 
 	num, err := strconv.Atoi(match[0])
@@ -94,7 +93,7 @@ func parseEpisodeName(s *goquery.Selection) (string, error) {
 
 	// generic name like "Episode 1" should be skipped
 	if regexp.MustCompile(`episode\s+[\d.]+`).MatchString(strings.ToLower(raw)) {
-		return "", errors.New(fmt.Sprintf("generic episode: %v", raw))
+		return "", fmt.Errorf("generic episode: %v", raw)
 	}
 
 	return strings.TrimSpace(raw), nil
@@ -105,17 +104,17 @@ func parseEpisodeDuration(s *goquery.Selection) (time.Duration, error) {
 	raw := s.Find("td.duration").First().Text()
 	raw = strings.TrimSpace(raw)
 	if len(raw) == 0 {
-		return 0, errors.New(fmt.Sprintf("not found: %v", s))
+		return 0, fmt.Errorf("not found: %v", s)
 	}
 
 	match := regexp.MustCompile(`(\d+)\s*m`).FindStringSubmatch(raw)
 	if len(match) == 0 {
-		return 0, errors.New(fmt.Sprintf("not found: %v", raw))
+		return 0, fmt.Errorf("not found: %v", raw)
 	}
 
 	mins, err := strconv.ParseFloat(match[1], 64)
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("parsing failed: %v", err))
+		return 0, fmt.Errorf("parsing failed: %v", err)
 	}
 
 	return time.Duration(mins) * time.Minute, nil
@@ -126,7 +125,7 @@ func parseEpisodeDate(s *goquery.Selection) (time.Time, error) {
 	raw := s.Find("td.airdate").First()
 	d, err := parseDate(raw.AttrOr("content", raw.Text()))
 	if err != nil {
-		return time.Time{}, errors.New(fmt.Sprintf("parsing failed: %v", err))
+		return time.Time{}, fmt.Errorf("parsing failed: %v", err)
 	}
 
 	return d, nil

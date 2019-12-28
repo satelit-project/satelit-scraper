@@ -28,7 +28,6 @@ func (l *Logger) CaptureSTDLog() error {
 		return nil
 	}
 
-	l.Sync()
 	logger, err := makeLogger()
 	if err != nil {
 		return err

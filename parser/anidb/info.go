@@ -27,7 +27,7 @@ func (p *Parser) source() *data.Anime_Source {
 	p.doc.Find(`div.g_definitionlist tr.resources a[href*="myanimelist"]`).Each(func(_ int, s *goquery.Selection) {
 		id, idErr := parseSource(s.AttrOr("href", ""), "/")
 		if err != nil {
-			err = errors.New(fmt.Sprintf("mal id is malformed: %v", idErr))
+			err = fmt.Errorf("mal id is malformed: %v", idErr)
 			return
 		}
 
@@ -37,7 +37,7 @@ func (p *Parser) source() *data.Anime_Source {
 	p.doc.Find(`div.g_definitionlist tr.resources a[href*="animenewsnetwork"]`).Each(func(_ int, s *goquery.Selection) {
 		id, idErr := parseSource(s.AttrOr("href", ""), "id=")
 		if err != nil {
-			err = errors.New(fmt.Sprintf("ann id is malformed: %v", idErr))
+			err = fmt.Errorf("ann id is malformed: %v", idErr)
 			return
 		}
 
@@ -215,12 +215,12 @@ func (p *Parser) description() string {
 func parseSource(str string, sep string) (int32, error) {
 	raw := strings.Split(str, sep)
 	if len(raw) == 0 {
-		return 0, errors.New(fmt.Sprintf("'%v' is not a source", str))
+		return 0, fmt.Errorf("'%v' is not a source", str)
 	}
 
 	s, err := strconv.Atoi(raw[len(raw)-1])
 	if err != nil {
-		return 0, errors.New(fmt.Sprintf("not an int: %v", s))
+		return 0, fmt.Errorf("not an int: %v", s)
 	}
 
 	return int32(s), nil
@@ -251,7 +251,7 @@ func parseRawEpisodesCount(raw string) (int32, error) {
 		return 0, nil
 	}
 
-	return 0, errors.New(fmt.Sprintf("failed to parse episode count from %v", raw))
+	return 0, fmt.Errorf("failed to parse episode count from %v", raw)
 }
 
 // Parses and returns start and end air date from AniDB page text or zero if air date not found.

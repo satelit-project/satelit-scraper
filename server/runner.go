@@ -98,12 +98,14 @@ func startAniDBScraping(ctx spiderContext) {
 	proxies := fetcher.Fetch()
 
 	tr := grpcTransport{ctx.client, time.Duration(ctx.cfg.Timeout) * time.Second}
-	reporter := spider.TaskReporter{ctx.task, tr}
+	reporter := spider.TaskReporter{Task: ctx.task, Transport: tr}
 	spdr := anidb.NewSpider(&reporter, ctx.cfg, log)
 
 	if len(proxies) == 0 {
 		log.Errorf("no proxies fetched, skipping")
-		reporter.Finish()
+		if err := reporter.Finish(); err != nil {
+			log.Errorf("failed to report task finish: %v", err)
+		}
 		return
 	}
 
