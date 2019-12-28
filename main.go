@@ -27,12 +27,12 @@ func main() {
 		srvc.Shutdown()
 	}()
 
-    log.Infof("starting service")
+	log.Infof("starting service")
 	if err := srvc.Run(); err != nil {
 		log.Errorf("error while running service: %v", err)
 	}
 
-    log.Infof("service stopped")
+	log.Infof("service stopped")
 }
 
 func makeLogger() *logging.Logger {
