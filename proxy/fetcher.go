@@ -25,7 +25,7 @@ type Fetcher struct {
 // Creates new Fetcher instance for fetching proxies with support for given protocol.
 func NewFetcher(provider Provider, limit int, proto Protocol, log *logging.Logger) Fetcher {
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
 	return Fetcher{
@@ -62,6 +62,7 @@ func (f *Fetcher) Fetch() []Proxy {
 			continue
 		}
 
+		f.log.Infof("found live proxy: %v", proxy)
 		live = append(live, proxy)
 	}
 
