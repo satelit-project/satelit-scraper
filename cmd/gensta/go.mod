@@ -1,4 +1,4 @@
-module shitty.moe/satelit-project/import-gensta
+module shitty.moe/satelit-project/gensta
 
 go 1.13
 
