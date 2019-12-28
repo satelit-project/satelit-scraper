@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 	"text/template"
-	"time"
 
 	"gopkg.in/yaml.v3"
 )
@@ -34,7 +33,7 @@ type Scraping struct {
 	TaskAddress string `yaml:"task-address"`
 
 	// Timeout for reporting scraping progress to external service.
-	ReportTimeout time.Duration `yaml:"report-timeout"`
+	ReportTimeout uint64 `yaml:"report-timeout"`
 }
 
 // AniDB specific configuration.
