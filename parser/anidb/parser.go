@@ -46,11 +46,17 @@ func (p *Parser) Anime() (*data.Anime, error) {
 		PosterUrl:     p.posterURL(),
 		EpisodesCount: p.episodesCount(),
 		Episodes:      p.episodes(),
-		StartDate:     p.startDate().Unix(),
-		EndDate:       p.endDate().Unix(),
 		Tags:          p.tags(),
 		Rating:        p.rating(),
 		Description:   p.description(),
+	}
+
+	if sd := p.startDate(); !sd.IsZero() {
+		anime.StartDate = sd.Unix()
+	}
+
+	if ed := p.endDate(); !ed.IsZero() {
+		anime.EndDate = ed.Unix()
 	}
 
 	if anime.Source == nil {

@@ -27,27 +27,35 @@ func (p *Parser) episodes() []*data.Episode {
 		number, err := parseEpisodeNumber(s)
 		if err != nil {
 			log.Errorf("failed to parse ep number: %v", err)
+			return
 		}
 
-		name, err := parseEpisodeName(s)
-		if err != nil {
-			log.Errorf("failed to parse ep name: %v", err)
+		name := parseEpisodeName(s)
+		if len(name) == 0 {
+			log.Infof("skipping episode without a name")
+			return
 		}
 
 		duration, err := parseEpisodeDuration(s)
 		if err != nil {
 			log.Errorf("failed to parse ep duration: %v", err)
+			duration = 0
 		}
 
 		date, err := parseEpisodeDate(s)
 		if err != nil {
 			log.Errorf("failed to parse ep air date: %v", err)
+			date = time.Time{}
 		}
 
 		ep.Number = number
 		ep.Name = name
 		ep.Duration = duration.Seconds()
-		ep.AirDate = date.Unix()
+		
+		if !date.IsZero() {
+			ep.AirDate = date.Unix()
+		}
+
 		eps = append(eps, &ep)
 	})
 
@@ -87,16 +95,16 @@ func parseEpisodeNumber(s *goquery.Selection) (int32, error) {
 	return int32(num), nil
 }
 
-// Parses name of an episode. Empty string is returned edisode doesn't have a name.
-func parseEpisodeName(s *goquery.Selection) (string, error) {
+// Parses name of an episode. Empty string is returned if edisode doesn't have a name.
+func parseEpisodeName(s *goquery.Selection) string {
 	raw := s.Find(`td.name label`).First().Text()
 
 	// generic name like "Episode 1" should be skipped
 	if regexp.MustCompile(`episode\s+[\d.]+`).MatchString(strings.ToLower(raw)) {
-		return "", fmt.Errorf("generic episode: %v", raw)
+		return ""
 	}
 
-	return strings.TrimSpace(raw), nil
+	return strings.TrimSpace(raw)
 }
 
 // Parses episode duration. Zero is returned if episode doesn't have duration.
