@@ -1,1 +1,1 @@
-spider/anidb/testdata/** filter=lfs diff=lfs merge=lfs -text
+parser/anidb/testdata/** filter=lfs diff=lfs merge=lfs -text
