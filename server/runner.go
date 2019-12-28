@@ -29,7 +29,7 @@ type AniDBRunner struct {
 }
 
 // Creates new runner instance.
-func New(cfg *config.Scraping, anidbCfg *config.AniDB, log *logging.Logger) AniDBRunner {
+func NewRunner(cfg *config.Scraping, anidbCfg *config.AniDB, log *logging.Logger) AniDBRunner {
 	return AniDBRunner{
 		cfg:      cfg,
 		anidbCfg: anidbCfg,

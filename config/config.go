@@ -14,6 +14,7 @@ import (
 // Application configuration.
 type Config struct {
 	Serving *Serving `yaml:"serving"`
+	Scraping *Scraping `yaml:"scraping"`
 	AniDB *AniDB `yaml:"anidb"`
 	Logging Logging `yaml:"logging"`
 }

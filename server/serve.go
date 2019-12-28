@@ -8,51 +8,50 @@ import (
 	"google.golang.org/grpc"
 
 	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
-	"shitty.moe/satelit-project/satelit-scraper/proxy"
-	"shitty.moe/satelit-project/satelit-scraper/proxy/provider"
 )
 
+// GRPC service for anime scraping.
 type ScrapingService struct {
-	tasksClient *grpc.ClientConn
-	proxies     *proxy.Fetcher
+	inner *grpc.Server
+	cfg config.Config
+	log *logging.Logger
 }
 
-func Serve(port int) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		return err
+// Creates new scraping service instance.
+func New(cfg config.Config, log *logging.Logger) *ScrapingService {
+	return &ScrapingService{
+		inner: grpc.NewServer(),
+		cfg: cfg,
+		log: log,
 	}
-
-	conn, err := grpc.Dial(_tasksAddr, grpc.WithInsecure())
-	if err != nil {
-		return err
-	}
-
-	robinProvider := provider.NewRoundRobin([]proxy.Provider{
-		provider.NewPLD(),
-		provider.NewPSC(),
-	})
-
-	grpc := grpc.NewServer()
-	server := scraperServiceServer{
-		tasksClient: conn,
-		proxies:     proxy.NewFetcher(robinProvider, ProxiesLimit, proxy.HTTP),
-	}
-
-	scraping.RegisterScraperServiceServer(grpc, &server)
-
-	logging.DefaultLogger().Infof("Start listening on port %d", port)
-	err = grpc.Serve(lis)
-	if err != nil {
-		return err
-	}
-
-	return conn.Close()
 }
 
-func (s *scraperServiceServer) StartScraping(ctx context.Context, intent *scraping.ScrapeIntent) (*scraping.ScrapeIntentResult, error) {
-	runner := NewRunner(s.tasksClient, s.proxies, logging.DefaultLogger())
+// Synchronously runs the service.
+func (s *ScrapingService) Run() error {
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.cfg.Serving.Port))
+	if err != nil {
+		return err
+	}
+
+	scraping.RegisterScraperServiceServer(s.inner, s)
+	if err = s.inner.Serve(lis); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Gracefully shuts down the service.
+func (s *ScrapingService) Shutdown() {
+	s.log.Infof("trying to gracefully shutdown the server")
+	s.inner.GracefulStop()
+}
+
+// Starts scraping process for given intent.
+func (s *ScrapingService) StartScraping(ctx context.Context, intent *scraping.ScrapeIntent) (*scraping.ScrapeIntentResult, error) {
+	runner := NewRunner(s.cfg.Scraping, s.cfg.AniDB, s.log)
 	mayContinue, err := runner.Run(ctx, intent)
 	if err != nil {
 		return nil, err
