@@ -14,8 +14,8 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 
+	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
 	"shitty.moe/satelit-project/satelit-scraper/proto/data"
-	"shitty.moe/satelit-project/satelit-scraper/spider/anidb"
 )
 
 const userAgent string = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15 " +
@@ -99,7 +99,7 @@ func parseAniDBTitle(id int, html io.Reader) (*data.Anime, error) {
 		return nil, err
 	}
 
-	parser, err := anidb.NewParser(htmlURL, html)
+	parser, err := anidb.NewParser(htmlURL, html, nil)
 	if err != nil {
 		return nil, err
 	}
