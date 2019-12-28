@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"flag"
+	"time"
 
 	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 	"shitty.moe/satelit-project/satelit-scraper/server"
-
-	"time"
 
 	uuid "shitty.moe/satelit-project/satelit-scraper/proto/common"
 	"shitty.moe/satelit-project/satelit-scraper/proto/data"
