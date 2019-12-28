@@ -9,7 +9,7 @@ import (
 type Protocol int
 
 const (
-	HTTP  Protocol = iota + 1
+	HTTP Protocol = iota + 1
 	HTTPS
 )
 

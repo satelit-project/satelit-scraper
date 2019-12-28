@@ -7,24 +7,24 @@ import (
 
 	"google.golang.org/grpc"
 
-	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/config"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 )
 
 // GRPC service for anime scraping.
 type ScrapingService struct {
 	inner *grpc.Server
-	cfg config.Config
-	log *logging.Logger
+	cfg   config.Config
+	log   *logging.Logger
 }
 
 // Creates new scraping service instance.
 func New(cfg config.Config, log *logging.Logger) *ScrapingService {
 	return &ScrapingService{
 		inner: grpc.NewServer(),
-		cfg: cfg,
-		log: log,
+		cfg:   cfg,
+		log:   log,
 	}
 }
 

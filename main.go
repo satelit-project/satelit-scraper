@@ -1,14 +1,14 @@
 package main
 
-import "os"
-import "os/signal"
-import "syscall"
+import (
+	"os"
+	"os/signal"
+	"syscall"
 
-import "shitty.moe/satelit-project/satelit-scraper/server"
-
-import "shitty.moe/satelit-project/satelit-scraper/config"
-
-import "shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/config"
+	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/server"
+)
 
 func main() {
 	cfg := makeConfig()

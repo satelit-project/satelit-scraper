@@ -2,21 +2,21 @@ package config
 
 import (
 	"bytes"
-	"time"
 	"io/ioutil"
 	"os"
 	"strings"
 	"text/template"
+	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 // Application configuration.
 type Config struct {
-	Serving *Serving `yaml:"serving"`
+	Serving  *Serving  `yaml:"serving"`
 	Scraping *Scraping `yaml:"scraping"`
-	AniDB *AniDB `yaml:"anidb"`
-	Logging Logging `yaml:"logging"`
+	AniDB    *AniDB    `yaml:"anidb"`
+	Logging  Logging   `yaml:"logging"`
 }
 
 // Server configuration.

@@ -17,7 +17,7 @@ type Transport interface {
 // Reports scraping progress for a given task.
 type TaskReporter struct {
 	// Task to report progress for.
-	Task      *scraping.Task
+	Task *scraping.Task
 
 	// An object which can communicate with remote service.
 	Transport Transport

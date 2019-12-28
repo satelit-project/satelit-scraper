@@ -19,7 +19,6 @@ func NewLogger() (*Logger, error) {
 		return nil, err
 	}
 
-
 	return &Logger{logger.Sugar()}, nil
 }
 

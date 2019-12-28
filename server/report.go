@@ -9,7 +9,7 @@ import (
 
 // gRPC transport for scraping progress reporter.
 type grpcTransport struct {
-	client scraping.ScraperTasksServiceClient
+	client  scraping.ScraperTasksServiceClient
 	timeout time.Duration
 }
 

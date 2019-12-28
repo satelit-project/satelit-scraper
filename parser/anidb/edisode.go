@@ -2,11 +2,11 @@ package anidb
 
 import (
 	"errors"
-	"time"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"shitty.moe/satelit-project/satelit-scraper/proto/data"
@@ -129,5 +129,5 @@ func parseEpisodeDate(s *goquery.Selection) (time.Time, error) {
 		return time.Time{}, errors.New(fmt.Sprintf("parsing failed: %v", err))
 	}
 
-	return d, nil 
+	return d, nil
 }

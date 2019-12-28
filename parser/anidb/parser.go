@@ -1,9 +1,9 @@
 package anidb
 
 import (
-	"net/url"
 	"errors"
 	"io"
+	"net/url"
 
 	"github.com/PuerkitoBio/goquery"
 	"shitty.moe/satelit-project/satelit-scraper/logging"

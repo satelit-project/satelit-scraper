@@ -71,7 +71,7 @@ func (r AniDBRunner) Run(context context.Context, intent *scraping.ScrapeIntent)
 		task:   task,
 		client: client,
 		cfg:    r.anidbCfg,
-		log: log,
+		log:    log,
 	})
 
 	return true, nil
@@ -79,11 +79,11 @@ func (r AniDBRunner) Run(context context.Context, intent *scraping.ScrapeIntent)
 
 // Context for running AniDB spiders.
 type spiderContext struct {
-	intent  *scraping.ScrapeIntent
-	task    *scraping.Task
-	client  scraping.ScraperTasksServiceClient
-	cfg     *config.AniDB
-	log     *logging.Logger
+	intent *scraping.ScrapeIntent
+	task   *scraping.Task
+	client scraping.ScraperTasksServiceClient
+	cfg    *config.AniDB
+	log    *logging.Logger
 }
 
 // Starts AniDB spider with data from provided context.
