@@ -51,7 +51,7 @@ func (p *Parser) episodes() []*data.Episode {
 		ep.Number = number
 		ep.Name = name
 		ep.Duration = duration.Seconds()
-		
+
 		if !date.IsZero() {
 			ep.AirDate = date.Unix()
 		}
