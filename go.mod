@@ -15,7 +15,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/temoto/robotstxt v1.1.1 // indirect
 	go.uber.org/zap v1.13.0
-	google.golang.org/grpc v1.26.0
+	google.golang.org/grpc v1.28.0
 	gopkg.in/yaml.v3 v3.0.0-20191120175047-4206685974f2
 	gotest.tools v2.2.0+incompatible
 )
