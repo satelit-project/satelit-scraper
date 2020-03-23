@@ -9,4 +9,4 @@ anidb:
   timeout: 30
   delay: 3
 logging:
-  profile: {{ if .ST_LOG_PROFILE }}"{{ .ST_LOG_PROFILE }}"{{ else }}"dev"{{ end }}
+  profile: {{ if .ST_LOG }}"{{ .ST_LOG }}"{{ else }}"dev"{{ end }}
