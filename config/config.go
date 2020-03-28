@@ -15,7 +15,7 @@ type Config struct {
 	Serving  *Serving  `yaml:"serving"`
 	Scraping *Scraping `yaml:"scraping"`
 	AniDB    *AniDB    `yaml:"anidb"`
-	Logging  Logging   `yaml:"logging"`
+	Logging  *Logging   `yaml:"logging"`
 }
 
 // Server configuration.

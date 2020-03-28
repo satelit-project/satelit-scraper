@@ -2,7 +2,7 @@ serving:
   port: 9050
   halt-timeout: 60
 scraping:
-  task-address: {{ if .ST_TASKS_ADDRESS }}"{{ .ST_TASKS_ADDRESS }}"{{ else }}"127.0.0.1:10602"{{ end }}
+  task-address: {{ if .ST_TASKS_ADDRESS }}"{{ .ST_TASKS_ADDRESS }}"{{ else }}"127.0.0.1:9060"{{ end }}
   report-timeout: 30
 anidb:
   url-template: "https://anidb.net/anime/%d"

@@ -3,6 +3,7 @@ package logging
 import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"shitty.moe/satelit-project/satelit-scraper/config"
 )
 
 // A logger which writes given message to stderr.
@@ -10,16 +11,17 @@ import (
 // It's safe to call all methods on a nil receiver.
 type Logger struct {
 	inner *zap.SugaredLogger
+	cfg   *config.Logging
 }
 
 // Creates and returns new logger instance
-func NewLogger() (*Logger, error) {
-	logger, err := makeLogger()
+func NewLogger(cfg *config.Logging) (*Logger, error) {
+	logger, err := makeLogger(cfg)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Logger{logger.Sugar()}, nil
+	return &Logger{logger.Sugar(), cfg}, nil
 }
 
 // Redirects standard logger's output to current logger instance.
@@ -28,7 +30,7 @@ func (l *Logger) CaptureSTDLog() error {
 		return nil
 	}
 
-	logger, err := makeLogger()
+	logger, err := makeLogger(l.cfg)
 	if err != nil {
 		return err
 	}
@@ -51,7 +53,7 @@ func (l *Logger) With(args ...interface{}) *Logger {
 	var pt *Logger
 	l.safeExec(func() {
 		inner := l.inner.With(args...)
-		pt = &Logger{inner}
+		pt = &Logger{inner, l.cfg}
 
 	})
 
@@ -114,6 +116,11 @@ func (l *Logger) safeExec(f func()) {
 }
 
 // Creates and returns new Uber's logger instance.
-func makeLogger() (*zap.Logger, error) {
-	return zap.NewDevelopment(zap.AddCallerSkip(3))
+func makeLogger(cfg *config.Logging) (*zap.Logger, error) {
+	options := zap.AddCallerSkip(3)
+	if cfg.Profile == "prod" {
+		return zap.NewProduction(options)
+	}
+
+	return zap.NewDevelopment(options)
 }

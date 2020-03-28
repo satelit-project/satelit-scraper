@@ -153,7 +153,9 @@ func init() {
 	proto.RegisterType((*ImportIntentResult)(nil), "import.ImportIntentResult")
 }
 
-func init() { proto.RegisterFile("import/intent.proto", fileDescriptor_93c332ae50efc1f8) }
+func init() {
+	proto.RegisterFile("import/intent.proto", fileDescriptor_93c332ae50efc1f8)
+}
 
 var fileDescriptor_93c332ae50efc1f8 = []byte{
 	// 240 bytes of a gzipped FileDescriptorProto

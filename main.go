@@ -12,7 +12,7 @@ import (
 
 func main() {
 	cfg := makeConfig()
-	log := makeLogger()
+	log := makeLogger(cfg)
 	defer func() {
 		_ = log.Sync()
 	}()
@@ -35,8 +35,8 @@ func main() {
 	log.Infof("service stopped")
 }
 
-func makeLogger() *logging.Logger {
-	log, err := logging.NewLogger()
+func makeLogger(cfg config.Config) *logging.Logger {
+	log, err := logging.NewLogger(cfg.Logging)
 	if err != nil {
 		panic(err)
 	}

@@ -25,7 +25,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-func init() { proto.RegisterFile("scraping/service.proto", fileDescriptor_25b1fc1f20cefb19) }
+func init() {
+	proto.RegisterFile("scraping/service.proto", fileDescriptor_25b1fc1f20cefb19)
+}
 
 var fileDescriptor_25b1fc1f20cefb19 = []byte{
 	// 226 bytes of a gzipped FileDescriptorProto
@@ -48,11 +50,11 @@ var fileDescriptor_25b1fc1f20cefb19 = []byte{
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ context.Context
-var _ grpc.ClientConn
+var _ grpc.ClientConnInterface
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
-const _ = grpc.SupportPackageIsVersion4
+const _ = grpc.SupportPackageIsVersion6
 
 // ScraperServiceClient is the client API for ScraperService service.
 //
@@ -63,10 +65,10 @@ type ScraperServiceClient interface {
 }
 
 type scraperServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewScraperServiceClient(cc *grpc.ClientConn) ScraperServiceClient {
+func NewScraperServiceClient(cc grpc.ClientConnInterface) ScraperServiceClient {
 	return &scraperServiceClient{cc}
 }
 
@@ -141,10 +143,10 @@ type ScraperTasksServiceClient interface {
 }
 
 type scraperTasksServiceClient struct {
-	cc *grpc.ClientConn
+	cc grpc.ClientConnInterface
 }
 
-func NewScraperTasksServiceClient(cc *grpc.ClientConn) ScraperTasksServiceClient {
+func NewScraperTasksServiceClient(cc grpc.ClientConnInterface) ScraperTasksServiceClient {
 	return &scraperTasksServiceClient{cc}
 }
 

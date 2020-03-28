@@ -467,7 +467,9 @@ func init() {
 	proto.RegisterType((*Anime_Tag)(nil), "data.Anime.Tag")
 }
 
-func init() { proto.RegisterFile("data/anime.proto", fileDescriptor_026676bd538d663f) }
+func init() {
+	proto.RegisterFile("data/anime.proto", fileDescriptor_026676bd538d663f)
+}
 
 var fileDescriptor_026676bd538d663f = []byte{
 	// 552 bytes of a gzipped FileDescriptorProto

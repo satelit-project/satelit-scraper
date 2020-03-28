@@ -289,7 +289,9 @@ func init() {
 	proto.RegisterType((*TaskFinish)(nil), "scraping.TaskFinish")
 }
 
-func init() { proto.RegisterFile("scraping/task.proto", fileDescriptor_69f65971c76f182a) }
+func init() {
+	proto.RegisterFile("scraping/task.proto", fileDescriptor_69f65971c76f182a)
+}
 
 var fileDescriptor_69f65971c76f182a = []byte{
 	// 290 bytes of a gzipped FileDescriptorProto

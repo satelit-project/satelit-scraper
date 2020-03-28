@@ -126,7 +126,9 @@ func init() {
 	proto.RegisterType((*ScrapeIntentResult)(nil), "scraping.ScrapeIntentResult")
 }
 
-func init() { proto.RegisterFile("scraping/intent.proto", fileDescriptor_ac1599d9bfe3cd80) }
+func init() {
+	proto.RegisterFile("scraping/intent.proto", fileDescriptor_ac1599d9bfe3cd80)
+}
 
 var fileDescriptor_ac1599d9bfe3cd80 = []byte{
 	// 184 bytes of a gzipped FileDescriptorProto
