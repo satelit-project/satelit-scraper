@@ -29,7 +29,6 @@ type UUID struct {
 }
 
 func (m *UUID) Reset()         { *m = UUID{} }
-func (m *UUID) String() string { return proto.CompactTextString(m) }
 func (*UUID) ProtoMessage()    {}
 func (*UUID) Descriptor() ([]byte, []int) {
 	return fileDescriptor_50f3e4787d94b896, []int{0}

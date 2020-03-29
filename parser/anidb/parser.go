@@ -39,6 +39,8 @@ func NewParser(url *url.URL, html io.Reader, log *logging.Logger) (Parser, error
 
 // Parses and returns Anime instance from AniDB anime page.
 func (p *Parser) Anime() (*data.Anime, error) {
+	p.log.Infof("parsing strarted")
+
 	anime := data.Anime{
 		Source:        p.source(),
 		Type:          p.animeType(),

@@ -88,7 +88,7 @@ type spiderContext struct {
 
 // Starts AniDB spider with data from provided context.
 func startAniDBScraping(ctx spiderContext) {
-	log := ctx.log.With("task", ctx.task.Id)
+	log := ctx.log
 	providers := provider.NewRoundRobin([]proxy.Provider{
 		provider.NewPLD(),
 		provider.NewPSC(),

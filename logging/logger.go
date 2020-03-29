@@ -119,8 +119,15 @@ func (l *Logger) safeExec(f func()) {
 func makeLogger(cfg *config.Logging) (*zap.Logger, error) {
 	options := zap.AddCallerSkip(3)
 	if cfg != nil && cfg.Profile == "prod" {
-		return zap.NewProduction(options)
+		return makeProdConfig().Build(options)
 	}
 
 	return zap.NewDevelopment(options)
+}
+
+func makeProdConfig() zap.Config {
+	cfg := zap.NewProductionConfig()
+	cfg.Encoding = "console"
+	cfg.EncoderConfig = zap.NewDevelopmentEncoderConfig()
+	return cfg
 }

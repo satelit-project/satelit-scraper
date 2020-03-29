@@ -29,7 +29,7 @@ type Spider struct {
 
 // Creates and returns new Spider instance.
 func NewSpider(reporter *spider.TaskReporter, config *config.AniDB, log *logging.Logger) Spider {
-	log = log.With("anidb_task", reporter.Task.Id)
+	log = log.With("task", reporter.Task.Id)
 
 	return Spider{
 		task:     reporter.Task,

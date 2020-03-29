@@ -1,4 +1,4 @@
-package common
+package uuid
 
 import "encoding/hex"
 

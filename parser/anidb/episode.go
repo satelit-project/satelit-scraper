@@ -38,13 +38,13 @@ func (p *Parser) episodes() []*data.Episode {
 
 		duration, err := parseEpisodeDuration(s)
 		if err != nil {
-			log.Errorf("failed to parse ep duration: %v", err)
+			log.Warnf("failed to parse ep duration: %v", err)
 			duration = 0
 		}
 
 		date, err := parseEpisodeDate(s)
 		if err != nil {
-			log.Errorf("failed to parse ep air date: %v", err)
+			log.Warnf("failed to parse ep air date: %v", err)
 			date = time.Time{}
 		}
 

@@ -58,7 +58,7 @@ func (f *Fetcher) Fetch() []Proxy {
 	for i := 0; i < len(list) && len(live) < f.limit; i++ {
 		proxy := list[i]
 		if !proxy.isAvailable(&f.client) {
-			f.log.Infof("proxy %v is not reachable", proxy)
+			f.log.Debugf("proxy %v is not reachable", proxy)
 			continue
 		}
 
