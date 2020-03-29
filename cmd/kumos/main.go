@@ -20,7 +20,7 @@ var animeIDs = AnimeIDsFlag("id", nil, "anime id to scrape")
 func main() {
 	flag.Parse()
 
-	log, err := logging.NewLogger()
+	log, err := logging.NewLogger(nil)
 	if err != nil {
 		panic(err)
 	}

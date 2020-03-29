@@ -100,7 +100,7 @@ func parseAniDBTitle(id int, html io.Reader) (*data.Anime, error) {
 		return nil, err
 	}
 
-	log, err := logging.NewLogger()
+	log, err := logging.NewLogger(nil)
 	if err != nil {
 		return nil, err
 	}

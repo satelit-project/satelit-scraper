@@ -1,6 +1,7 @@
 package anidb
 
 import (
+	"errors"
 	"strings"
 	"time"
 )
@@ -11,7 +12,7 @@ func parseDate(s string) (time.Time, error) {
 
 	s = strings.TrimSpace(s)
 	if len(s) == 0 {
-		return zero, nil
+		return zero, errors.New("date is empty")
 	}
 
 	var format string

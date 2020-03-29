@@ -118,7 +118,7 @@ func (l *Logger) safeExec(f func()) {
 // Creates and returns new Uber's logger instance.
 func makeLogger(cfg *config.Logging) (*zap.Logger, error) {
 	options := zap.AddCallerSkip(3)
-	if cfg.Profile == "prod" {
+	if cfg != nil && cfg.Profile == "prod" {
 		return zap.NewProduction(options)
 	}
 
