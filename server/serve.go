@@ -10,20 +10,23 @@ import (
 	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
+	"shitty.moe/satelit-project/satelit-scraper/spider"
 )
 
 // GRPC service for anime scraping.
 type ScrapingService struct {
 	inner *grpc.Server
 	cfg   config.Config
+	cache spider.Cache
 	log   *logging.Logger
 }
 
 // Creates new scraping service instance.
-func New(cfg config.Config, log *logging.Logger) *ScrapingService {
+func New(cfg config.Config, cache spider.Cache, log *logging.Logger) *ScrapingService {
 	return &ScrapingService{
 		inner: grpc.NewServer(),
 		cfg:   cfg,
+		cache: cache,
 		log:   log,
 	}
 }
@@ -51,7 +54,7 @@ func (s *ScrapingService) Shutdown() {
 
 // Starts scraping process for given intent.
 func (s *ScrapingService) StartScraping(ctx context.Context, intent *scraping.ScrapeIntent) (*scraping.ScrapeIntentResult, error) {
-	runner := NewRunner(s.cfg.Scraping, s.cfg.AniDB, s.log)
+	runner := NewRunner(s.cfg.Scraping, s.cfg.AniDB, s.cache, s.log)
 	mayContinue, err := runner.Run(ctx, intent)
 	if err != nil {
 		return nil, err

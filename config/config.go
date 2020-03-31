@@ -15,7 +15,8 @@ type Config struct {
 	Serving  *Serving  `yaml:"serving"`
 	Scraping *Scraping `yaml:"scraping"`
 	AniDB    *AniDB    `yaml:"anidb"`
-	Logging  *Logging   `yaml:"logging"`
+	Storage  *Storage  `yaml:"storage"`
+	Logging  *Logging  `yaml:"logging"`
 }
 
 // Server configuration.
@@ -46,6 +47,24 @@ type AniDB struct {
 
 	// Delay between AniDB requests.
 	Delay uint64 `yaml:"delay"`
+}
+
+// S3 configuration for the service data storage.
+type Storage struct {
+	// Storage access key.
+	Key string `yaml:"key"`
+
+	// Storage access secret.
+	Secret string `yaml:"secret"`
+
+	// Host to store service artifacts.
+	Host string `yaml:"host"`
+
+	// S3 bucket name.
+	Bucket string `yaml:"bucket"`
+
+	// Timeout for files uploading.
+	UploadTimeout uint64 `yaml:"upload-timeout"`
 }
 
 // Logging configuration.

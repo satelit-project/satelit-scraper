@@ -3,6 +3,7 @@ package anidb
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"time"
 
 	"github.com/gocolly/colly"
@@ -12,6 +13,7 @@ import (
 	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
+	"shitty.moe/satelit-project/satelit-scraper/proto/data"
 	"shitty.moe/satelit-project/satelit-scraper/proto/scraping"
 	"shitty.moe/satelit-project/satelit-scraper/proxy"
 	"shitty.moe/satelit-project/satelit-scraper/spider"
@@ -21,6 +23,7 @@ import (
 type Spider struct {
 	task     *scraping.Task
 	reporter *spider.TaskReporter
+	cache    spider.Cache
 	config   *config.AniDB
 	proxies  []proxy.Proxy
 	jobMap   map[string]int
@@ -28,12 +31,13 @@ type Spider struct {
 }
 
 // Creates and returns new Spider instance.
-func NewSpider(reporter *spider.TaskReporter, config *config.AniDB, log *logging.Logger) Spider {
+func NewSpider(reporter *spider.TaskReporter, cache spider.Cache, config *config.AniDB, log *logging.Logger) Spider {
 	log = log.With("task", reporter.Task.Id)
 
 	return Spider{
 		task:     reporter.Task,
 		reporter: reporter,
+		cache:    cache,
 		config:   config,
 		proxies:  nil,
 		jobMap:   make(map[string]int),
@@ -98,10 +102,25 @@ func (s *Spider) setupProxy(coll *colly.Collector) {
 // Setups Colly callbacks for the spider.
 func (s *Spider) setupCallbacks(coll *colly.Collector) {
 	coll.OnResponse(func(r *colly.Response) {
-		parser, err := anidb.NewParser(r.Request.URL, bytes.NewReader(r.Body), s.log)
+		jobIndex, ok := s.jobMap[r.Request.URL.String()]
+		if !ok {
+			s.log.Errorf("job index not found")
+			return
+		}
+
+		job := s.task.Jobs[jobIndex]
+
+		var html bytes.Buffer
+		reader := io.TeeReader(bytes.NewReader(r.Body), &html)
+
+		parser, err := anidb.NewParser(r.Request.URL, reader, s.log)
 		if err != nil {
 			s.log.Errorf("failed to create parser: %v", err)
 			return
+		}
+
+		if err := s.cache.AddHTML(&html, data.Source_ANIDB, job.AnimeId); err != nil {
+			s.log.Warnf("failed to cache html: %v", err)
 		}
 
 		anime, err := parser.Anime()
@@ -110,13 +129,6 @@ func (s *Spider) setupCallbacks(coll *colly.Collector) {
 			return
 		}
 
-		jobIndex, ok := s.jobMap[r.Request.URL.String()]
-		if !ok {
-			s.log.Errorf("job index not found")
-			return
-		}
-
-		job := s.task.Jobs[jobIndex]
 		if err = s.reporter.Report(job, anime); err != nil {
 			s.log.Errorf("failed to report job: %v", err)
 		}

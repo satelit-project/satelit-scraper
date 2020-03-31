@@ -14,8 +14,8 @@ import (
 
 	"github.com/golang/protobuf/jsonpb"
 
-	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
+	"shitty.moe/satelit-project/satelit-scraper/parser/anidb"
 	"shitty.moe/satelit-project/satelit-scraper/proto/data"
 )
 

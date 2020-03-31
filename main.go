@@ -8,6 +8,7 @@ import (
 	"shitty.moe/satelit-project/satelit-scraper/config"
 	"shitty.moe/satelit-project/satelit-scraper/logging"
 	"shitty.moe/satelit-project/satelit-scraper/server"
+	"shitty.moe/satelit-project/satelit-scraper/spider"
 )
 
 func main() {
@@ -17,8 +18,13 @@ func main() {
 		_ = log.Sync()
 	}()
 
-	srvc := server.New(cfg, log)
+	cache, err := makeCache(cfg.Storage, log)
+	if err != nil {
+		log.Errorf("failed to create cache: %v", err)
+		return
+	}
 
+	srvc := server.New(cfg, cache, log)
 	go func() {
 		done := make(chan os.Signal, 1)
 		signal.Notify(done, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
@@ -51,4 +57,8 @@ func makeConfig() config.Config {
 	}
 
 	return cfg
+}
+
+func makeCache(cfg *config.Storage, log *logging.Logger) (spider.Cache, error) {
+	return spider.NewS3Cache(cfg, log)
 }

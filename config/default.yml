@@ -8,5 +8,11 @@ anidb:
   url-template: "https://anidb.net/anime/%d"
   timeout: 30
   delay: 3
+storage:
+  key: {{ if .DO_SPACES_KEY }}"{{ .DO_SPACES_KEY }}"{{ else }}"AKIAIOSFODNN7EXAMPLE"{{ end }}
+  secret: {{ if .DO_SPACES_SECRET }}"{{ .DO_SPACES_SECRET }}"{{ else }}"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"{{ end }}
+  host: {{ if .DO_SPACES_HOST }}"{{ .DO_SPACES_HOST }}"{{ else }}"localhost:9000"{{ end }}
+  bucket: {{ if .DO_BUCKET }}"{{ .DO_BUCKET }}"{{ else }}"satelit"{{ end }}
+  upload-timeout: 60
 logging:
   profile: {{ if .ST_LOG }}"{{ .ST_LOG }}"{{ else }}"dev"{{ end }}

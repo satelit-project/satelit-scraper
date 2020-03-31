@@ -25,14 +25,16 @@ const TitlesPerRun int32 = 8
 type AniDBRunner struct {
 	cfg      *config.Scraping
 	anidbCfg *config.AniDB
+	cache    spider.Cache
 	log      *logging.Logger
 }
 
 // Creates new runner instance.
-func NewRunner(cfg *config.Scraping, anidbCfg *config.AniDB, log *logging.Logger) AniDBRunner {
+func NewRunner(cfg *config.Scraping, anidbCfg *config.AniDB, cache spider.Cache, log *logging.Logger) AniDBRunner {
 	return AniDBRunner{
 		cfg:      cfg,
 		anidbCfg: anidbCfg,
+		cache:    cache,
 		log:      log,
 	}
 }
@@ -70,6 +72,7 @@ func (r AniDBRunner) Run(context context.Context, intent *scraping.ScrapeIntent)
 		intent: intent,
 		task:   task,
 		client: client,
+		cache:  r.cache,
 		cfg:    r.anidbCfg,
 		log:    log,
 	})
@@ -82,6 +85,7 @@ type spiderContext struct {
 	intent *scraping.ScrapeIntent
 	task   *scraping.Task
 	client scraping.ScraperTasksServiceClient
+	cache  spider.Cache
 	cfg    *config.AniDB
 	log    *logging.Logger
 }
@@ -99,7 +103,7 @@ func startAniDBScraping(ctx spiderContext) {
 
 	tr := grpcTransport{ctx.client, time.Duration(ctx.cfg.Timeout) * time.Second}
 	reporter := spider.TaskReporter{Task: ctx.task, Transport: tr}
-	spdr := anidb.NewSpider(&reporter, ctx.cfg, log)
+	spdr := anidb.NewSpider(&reporter, ctx.cache, ctx.cfg, log)
 
 	if len(proxies) == 0 {
 		log.Errorf("no proxies fetched, skipping")
