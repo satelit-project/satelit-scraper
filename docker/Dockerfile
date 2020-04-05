@@ -5,7 +5,7 @@ RUN docker/scripts/build-project.sh
 
 FROM alpine:latest
 WORKDIR /satelit-scraper/
-EXPOSE 8080
+EXPOSE 9050
 COPY --from=builder /satelit-scraper/satelit-scraper.tar.gz /satelit-scraper/
 RUN ["tar", "-xvf", "satelit-scraper.tar.gz"]
 ENTRYPOINT ["/satelit-scraper/entry.sh"]
