@@ -1,6 +1,7 @@
 # satelit-scraper
-Parses data from external sources for 'satelit-import'
+
+Scrapes data from third-party services.
 
 ## Dependencies
 
-- Go 1.13
+- Go
