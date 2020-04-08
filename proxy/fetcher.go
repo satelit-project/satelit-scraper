@@ -82,7 +82,7 @@ func (f *Fetcher) filter(arr []Proxy, limit int) []Proxy {
 			}(pr)
 		}
 
-		for _, _ = range arr[start:end] {
+		for range arr[start:end] {
 			pr := <-ch
 			if pr.IsValid() {
 				f.log.Infof("found live proxy: %v", pr)
@@ -98,13 +98,4 @@ func (f *Fetcher) filter(arr []Proxy, limit int) []Proxy {
 func shuffle(arr []Proxy) {
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(arr), func(i, j int) { arr[i], arr[j] = arr[j], arr[i] })
-}
-
-// srsly?
-func min(x, y int) int {
-	if x < y {
-		return x
-	}
-
-	return y
 }
