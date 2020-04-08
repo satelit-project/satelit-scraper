@@ -4,6 +4,10 @@ import "encoding/hex"
 
 func (u *UUID) String() string {
 	uuid := u.Uuid
+	if len(uuid) != 36 {
+		return "non-uuid"
+	}
+
 	var buf [36]byte
 	hex.Encode(buf[:], uuid[:4])
 	buf[8] = '-'

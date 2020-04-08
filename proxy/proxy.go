@@ -47,3 +47,8 @@ func (p Proxy) Address() string {
 func (p Proxy) String() string {
 	return p.Address()
 }
+
+// Returns true if proxy is correctly specified.
+func (p Proxy) IsValid() bool {
+	return len(p.Host) > 0 && len(p.Port) > 0 && p.Proto != Protocol(0)
+}

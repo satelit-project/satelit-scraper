@@ -1,6 +1,7 @@
 package proxy
 
 import (
+	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
@@ -10,6 +11,8 @@ import (
 
 // Represents a type that can return list of proxy servers.
 type Provider interface {
+	fmt.Stringer
+
 	Fetch(proto Protocol) ([]Proxy, error)
 }
 
@@ -44,7 +47,7 @@ func (f *Fetcher) SetProxyTimeout(timeout time.Duration) {
 
 // Fetches and returns list of available proxy servers or empty slice if no proxies available.
 func (f *Fetcher) Fetch() []Proxy {
-	f.log.Infof("fetching proxies")
+	f.log.Infof("fetching proxies from %v", f.provider)
 	list, err := f.provider.Fetch(f.proto)
 	if err != nil {
 		f.log.Errorf("failed to fetch proxies: %v", err)
@@ -54,19 +57,41 @@ func (f *Fetcher) Fetch() []Proxy {
 	shuffle(list)
 
 	f.log.Infof("checking proxies")
-	live := make([]Proxy, 0, min(f.limit, len(list)))
-	for i := 0; i < len(list) && len(live) < f.limit; i++ {
-		proxy := list[i]
-		if !proxy.isAvailable(&f.client) {
-			f.log.Debugf("proxy %v is not reachable", proxy)
-			continue
+	return f.filter(list, f.limit)
+}
+
+// Returns at least first `limit` live proxies.
+func (f *Fetcher) filter(arr []Proxy, limit int) []Proxy {
+	var filtered = make([]Proxy, 0, limit)
+
+	for round := 0; len(filtered) < limit && round * limit < len(arr); round += 1 {
+		start, end := round * limit, (round + 1) * limit
+		if end > len(arr) {
+			end = len(arr)
 		}
 
-		f.log.Infof("found live proxy: %v", proxy)
-		live = append(live, proxy)
+		ch := make(chan Proxy)
+		for _, pr := range arr[start:end] {
+			go func(proxy Proxy) {
+				if !proxy.isAvailable(&f.client) {
+					f.log.Debugf("proxy %v is not reachable", proxy)
+					ch <- Proxy{}
+				}
+
+				ch <- proxy
+			}(pr)
+		}
+
+		for _, _ = range arr[start:end] {
+			pr := <-ch
+			if pr.IsValid() {
+				f.log.Infof("found live proxy: %v", pr)
+				filtered = append(filtered, pr)
+			}
+		}
 	}
 
-	return live
+	return filtered
 }
 
 // Shuffles list of proxies.

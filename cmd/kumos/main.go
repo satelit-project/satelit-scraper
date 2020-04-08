@@ -47,7 +47,7 @@ func main() {
 		panic(err)
 	}
 
-	runner := server.NewRunner(cfg.Scraping, cfg.AniDB, log)
+	runner := server.NewRunner(cfg.Scraping, cfg.AniDB, noCache{}, log)
 	_, err = runner.Run(context.Background(), &scraping.ScrapeIntent{
 		Id:     &uuid.UUID{},
 		Source: data.Source_ANIDB,

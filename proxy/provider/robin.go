@@ -19,9 +19,12 @@ func NewRoundRobin(providers []proxy.Provider) proxy.Provider {
 }
 
 func (r *roundRobinProvider) Fetch(proto proxy.Protocol) ([]proxy.Proxy, error) {
-	index := atomic.LoadUint32(&r.index) % uint32(len(r.providers))
-	atomic.AddUint32(&r.index, 1)
-
-	provider := r.providers[index%uint32(len(r.providers))]
+	index := atomic.AddUint32(&r.index, 1) % uint32(len(r.providers))
+	provider := r.providers[index]
 	return provider.Fetch(proto)
+}
+
+func (r *roundRobinProvider) String() string {
+	index := (atomic.LoadUint32(&r.index) + 1) % uint32(len(r.providers))
+	return r.providers[index].String()
 }

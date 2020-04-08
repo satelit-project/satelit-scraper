@@ -18,6 +18,10 @@ func (p PSC) Fetch(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	return p(proto)
 }
 
+func (p PSC) String() string {
+	return "proxyscrape.com"
+}
+
 func fetchPSC(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	url := fmt.Sprintf("https://api.proxyscrape.com/?request=getproxies&proxytype=%s"+
 		"&timeout=5000&country=all&ssl=all&anonymity=all", proto.String())

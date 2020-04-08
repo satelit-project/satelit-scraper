@@ -21,6 +21,10 @@ func (p PLD) Fetch(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	return p(proto)
 }
 
+func (p PLD) String() string {
+	return "proxy-list.download"
+}
+
 func fetchPLD(proto proxy.Protocol) ([]proxy.Proxy, error) {
 	url := fmt.Sprintf("https://www.proxy-list.download/api/v1/get?type=%s", proto.String())
 	resp, err := http.Get(url)
