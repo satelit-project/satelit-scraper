@@ -64,8 +64,8 @@ func (f *Fetcher) Fetch() []Proxy {
 func (f *Fetcher) filter(arr []Proxy, limit int) []Proxy {
 	var filtered = make([]Proxy, 0, limit)
 
-	for round := 0; len(filtered) < limit && round * limit < len(arr); round += 1 {
-		start, end := round * limit, (round + 1) * limit
+	for round := 0; len(filtered) < limit && round*limit < len(arr); round += 1 {
+		start, end := round*limit, (round+1)*limit
 		if end > len(arr) {
 			end = len(arr)
 		}
