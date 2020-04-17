@@ -4,7 +4,7 @@ import "encoding/hex"
 
 func (u *UUID) String() string {
 	uuid := u.Uuid
-	if len(uuid) != 36 {
+	if len(uuid) != 32 {
 		return "non-uuid"
 	}
 
